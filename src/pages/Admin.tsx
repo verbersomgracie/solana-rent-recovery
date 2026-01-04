@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, Users, Settings, ArrowLeft, Loader2, Save, Percent, 
   TrendingUp, Wallet, Receipt, Coins, Search, RefreshCw, 
-  ExternalLink, Clock, Activity, Calendar, Hash, FlaskConical, Trash2
+  ExternalLink, Clock, Activity, Calendar, Hash, FlaskConical, Trash2, ToggleLeft, ToggleRight
 } from "lucide-react";
 
 interface Profile {
@@ -56,6 +56,8 @@ const Admin = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isTestingTransaction, setIsTestingTransaction] = useState(false);
   const [isDeletingTestTransactions, setIsDeletingTestTransactions] = useState(false);
+  const [isTogglingSimulation, setIsTogglingSimulation] = useState(false);
+  const [simulationModeEnabled, setSimulationModeEnabled] = useState(false);
   const [platformFee, setPlatformFee] = useState("5");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -83,6 +85,17 @@ const Admin = () => {
 
       if (!settingsError && settings) {
         setPlatformFee(settings.value);
+      }
+
+      // Load simulation mode setting
+      const { data: simSettings, error: simError } = await supabase
+        .from("platform_settings")
+        .select("*")
+        .eq("key", "simulation_mode_enabled")
+        .maybeSingle();
+
+      if (!simError && simSettings) {
+        setSimulationModeEnabled(simSettings.value === 'true');
       }
 
       // Load all profiles
@@ -279,6 +292,39 @@ const Admin = () => {
       });
     } finally {
       setIsDeletingTestTransactions(false);
+    }
+  };
+
+  const handleToggleSimulation = async () => {
+    setIsTogglingSimulation(true);
+    try {
+      const newValue = !simulationModeEnabled;
+      
+      const { error } = await supabase
+        .from("platform_settings")
+        .update({ value: newValue.toString() })
+        .eq("key", "simulation_mode_enabled");
+
+      if (error) {
+        throw error;
+      }
+
+      setSimulationModeEnabled(newValue);
+      toast({
+        title: newValue ? "Modo Simulação Ativado" : "Modo Simulação Desativado",
+        description: newValue 
+          ? "Usuários agora podem testar o sistema sem wallet." 
+          : "Modo de simulação foi desativado.",
+      });
+    } catch (error) {
+      console.error("Error toggling simulation mode:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível alterar o modo de simulação.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTogglingSimulation(false);
     }
   };
 
@@ -503,6 +549,28 @@ const Admin = () => {
                   </Button>
                   <p className="text-xs text-muted-foreground mt-2">
                     Remove todas as transações com "test" na assinatura ou wallet.
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  <Label className="text-sm text-muted-foreground mb-2 block">Modo de Simulação</Label>
+                  <Button 
+                    variant={simulationModeEnabled ? "default" : "outline"} 
+                    onClick={handleToggleSimulation} 
+                    disabled={isTogglingSimulation}
+                    className={`w-full ${simulationModeEnabled ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                  >
+                    {isTogglingSimulation ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : simulationModeEnabled ? (
+                      <ToggleRight className="w-4 h-4 mr-2" />
+                    ) : (
+                      <ToggleLeft className="w-4 h-4 mr-2" />
+                    )}
+                    {simulationModeEnabled ? 'Simulação Ativada' : 'Simulação Desativada'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Permite que usuários testem o fluxo de recuperação sem conectar uma wallet real.
                   </p>
                 </div>
               </div>
