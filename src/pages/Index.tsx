@@ -12,6 +12,9 @@ import { useState } from "react";
 const Index = () => {
   const [showWalletModal, setShowWalletModal] = useState(false);
   
+  // Simulation mode controlled by environment variable (disabled in production by default)
+  const simulationEnabled = import.meta.env.VITE_ENABLE_SIMULATION === 'true';
+  
   const { 
     isConnected, 
     publicKey, 
@@ -62,7 +65,7 @@ const Index = () => {
           closeAccounts={closeAccounts}
           isScanning={isScanning}
           isProcessing={isProcessing}
-          simulationMode={true}
+          simulationMode={simulationEnabled}
         />
         
         <HowItWorks />
