@@ -199,6 +199,36 @@ export function useSolana() {
     }
   }, [publicKey]);
 
+  const logTransaction = useCallback(async (
+    walletAddress: string,
+    accountsClosed: number,
+    solRecovered: number,
+    feeCollected: number,
+    feePercent: number,
+    transactionSignature: string | null
+  ) => {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .insert({
+          wallet_address: walletAddress,
+          accounts_closed: accountsClosed,
+          sol_recovered: solRecovered,
+          fee_collected: feeCollected,
+          fee_percent: feePercent,
+          transaction_signature: transactionSignature
+        });
+
+      if (error) {
+        console.error('Error logging transaction:', error);
+      } else {
+        console.log('Transaction logged successfully');
+      }
+    } catch (error) {
+      console.error('Error logging transaction:', error);
+    }
+  }, []);
+
   const closeAccounts = useCallback(async (
     accountAddresses: string[]
   ): Promise<TransactionResult> => {
@@ -255,6 +285,16 @@ export function useSolana() {
       
       const result = await provider.signAndSendTransaction(transaction);
       
+      // Log transaction to database
+      await logTransaction(
+        publicKey,
+        summary.accountsClosed,
+        summary.totalRentSol,
+        summary.platformFeeSol,
+        summary.platformFeePercent || 5,
+        result.signature
+      );
+      
       toast.success('SOL recuperado com sucesso!', {
         description: `Você recebeu ${summary.netAmountSol.toFixed(6)} SOL`
       });
@@ -279,7 +319,7 @@ export function useSolana() {
     } finally {
       setIsProcessing(false);
     }
-  }, [publicKey, walletName, getProvider]);
+  }, [publicKey, walletName, getProvider, logTransaction]);
 
   return {
     isConnected,
