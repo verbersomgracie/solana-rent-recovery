@@ -5,8 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, Settings, ArrowLeft, Loader2, Save, Percent, TrendingUp, Wallet, Receipt, Coins } from "lucide-react";
+import { 
+  Shield, Users, Settings, ArrowLeft, Loader2, Save, Percent, 
+  TrendingUp, Wallet, Receipt, Coins, Search, RefreshCw, 
+  ExternalLink, Clock, Activity, Calendar, Hash
+} from "lucide-react";
 
 interface Profile {
   id: string;
@@ -33,15 +38,27 @@ interface TransactionStats {
   totalAccountsClosed: number;
 }
 
+interface WalletStats {
+  wallet_address: string;
+  total_transactions: number;
+  total_sol_recovered: number;
+  total_fees: number;
+  total_accounts: number;
+  last_transaction: string;
+}
+
 const Admin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [platformFee, setPlatformFee] = useState("5");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [walletStats, setWalletStats] = useState<WalletStats[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState<TransactionStats>({
     totalTransactions: 0,
     totalSolRecovered: 0,
@@ -99,12 +116,50 @@ const Admin = () => {
         });
         
         setStats(totalStats);
+
+        // Calculate per-wallet stats
+        const walletMap = new Map<string, WalletStats>();
+        transactionsData.forEach(tx => {
+          const existing = walletMap.get(tx.wallet_address);
+          if (existing) {
+            existing.total_transactions += 1;
+            existing.total_sol_recovered += Number(tx.sol_recovered);
+            existing.total_fees += Number(tx.fee_collected);
+            existing.total_accounts += tx.accounts_closed;
+            if (new Date(tx.created_at) > new Date(existing.last_transaction)) {
+              existing.last_transaction = tx.created_at;
+            }
+          } else {
+            walletMap.set(tx.wallet_address, {
+              wallet_address: tx.wallet_address,
+              total_transactions: 1,
+              total_sol_recovered: Number(tx.sol_recovered),
+              total_fees: Number(tx.fee_collected),
+              total_accounts: tx.accounts_closed,
+              last_transaction: tx.created_at
+            });
+          }
+        });
+        
+        const sortedWalletStats = Array.from(walletMap.values())
+          .sort((a, b) => b.total_sol_recovered - a.total_sol_recovered);
+        setWalletStats(sortedWalletStats);
       }
     } catch (error) {
       console.error("Error loading admin data:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await loadAdminData();
+    setIsRefreshing(false);
+    toast({
+      title: "Atualizado",
+      description: "Dados atualizados com sucesso.",
+    });
   };
 
   const handleSaveFee = async () => {
@@ -158,14 +213,49 @@ const Admin = () => {
     });
   };
 
-  const formatAddress = (address: string | null) => {
+  const formatRelativeTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "agora";
+    if (diffMins < 60) return `${diffMins}m atrás`;
+    if (diffHours < 24) return `${diffHours}h atrás`;
+    if (diffDays < 7) return `${diffDays}d atrás`;
+    return formatDate(dateString);
+  };
+
+  const formatAddress = (address: string | null, short = true) => {
     if (!address) return "N/A";
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    if (short) return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    return `${address.slice(0, 12)}...${address.slice(-8)}`;
   };
 
   const formatSol = (value: number) => {
     return value.toFixed(4);
   };
+
+  const openSolscan = (signature: string | null) => {
+    if (signature) {
+      window.open(`https://solscan.io/tx/${signature}`, '_blank');
+    }
+  };
+
+  const openWalletSolscan = (address: string) => {
+    window.open(`https://solscan.io/account/${address}`, '_blank');
+  };
+
+  const filteredTransactions = transactions.filter(tx => 
+    tx.wallet_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tx.transaction_signature?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredWalletStats = walletStats.filter(ws =>
+    ws.wallet_address.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -181,16 +271,26 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="w-8 h-8 text-primary" />
             <h1 className="text-xl font-bold">Painel Administrativo</h1>
+            <Badge variant="outline" className="ml-2">
+              <Activity className="w-3 h-3 mr-1" />
+              Live
+            </Badge>
           </div>
-          <Button variant="outline" onClick={() => navigate("/")}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+              <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Atualizar
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/")}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -297,29 +397,37 @@ const Admin = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Resumo Geral
+                <TrendingUp className="w-5 h-5" />
+                Métricas
               </CardTitle>
               <CardDescription>
-                Visão geral da plataforma
+                Indicadores de performance
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Total de Usuários:</span>
+                  <span className="text-sm text-muted-foreground">Usuários Registrados:</span>
                   <span className="font-bold text-lg">{profiles.length}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm text-muted-foreground">Taxa Atual:</span>
-                  <span className="font-bold text-lg text-primary">{platformFee}%</span>
+                  <span className="text-sm text-muted-foreground">Wallets Únicas:</span>
+                  <span className="font-bold text-lg">{walletStats.length}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                   <span className="text-sm text-muted-foreground">Média SOL/Transação:</span>
-                  <span className="font-bold text-lg">
+                  <span className="font-bold text-lg text-green-500">
                     {stats.totalTransactions > 0 
                       ? formatSol(stats.totalSolRecovered / stats.totalTransactions) 
                       : "0.0000"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Média Contas/Transação:</span>
+                  <span className="font-bold text-lg text-blue-500">
+                    {stats.totalTransactions > 0 
+                      ? (stats.totalAccountsClosed / stats.totalTransactions).toFixed(1)
+                      : "0"}
                   </span>
                 </div>
               </div>
@@ -327,54 +435,184 @@ const Admin = () => {
           </Card>
         </div>
 
-        {/* Recent Transactions */}
+        {/* Search Bar */}
+        <div className="mt-6 mb-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por wallet ou assinatura..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
+        {/* Top Wallets */}
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Receipt className="w-5 h-5" />
-              Transações Recentes ({transactions.length})
+              <Wallet className="w-5 h-5" />
+              Top Wallets ({filteredWalletStats.length})
             </CardTitle>
             <CardDescription>
-              Histórico de transações realizadas na plataforma
+              Ranking de wallets por SOL recuperado
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {transactions.length === 0 ? (
+            {filteredWalletStats.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                Nenhuma transação realizada ainda.
+                Nenhuma wallet encontrada.
               </p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">#</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Wallet</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Contas</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Transações</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">SOL Recuperado</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Taxa</th>
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Data</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Taxa Paga</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Contas</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Última Atividade</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {transactions.slice(0, 20).map((tx) => (
-                      <tr key={tx.id} className="border-b border-border/50 hover:bg-muted/50">
-                        <td className="py-3 px-4 font-mono text-sm">
-                          {formatAddress(tx.wallet_address)}
+                    {filteredWalletStats.slice(0, 10).map((ws, index) => (
+                      <tr key={ws.wallet_address} className="border-b border-border/50 hover:bg-muted/50">
+                        <td className="py-3 px-4">
+                          <Badge variant={index < 3 ? "default" : "outline"}>
+                            {index + 1}
+                          </Badge>
                         </td>
-                        <td className="py-3 px-4">{tx.accounts_closed}</td>
-                        <td className="py-3 px-4 text-green-500 font-medium">
-                          {formatSol(Number(tx.sol_recovered))} SOL
+                        <td className="py-3 px-4 font-mono text-sm">
+                          {formatAddress(ws.wallet_address, false)}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge variant="secondary">{ws.total_transactions}</Badge>
+                        </td>
+                        <td className="py-3 px-4 text-green-500 font-bold">
+                          {formatSol(ws.total_sol_recovered)} SOL
                         </td>
                         <td className="py-3 px-4 text-amber-500">
-                          {formatSol(Number(tx.fee_collected))} SOL ({tx.fee_percent}%)
+                          {formatSol(ws.total_fees)} SOL
                         </td>
-                        <td className="py-3 px-4 text-muted-foreground">
-                          {formatDate(tx.created_at)}
+                        <td className="py-3 px-4">{ws.total_accounts}</td>
+                        <td className="py-3 px-4 text-muted-foreground text-sm">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatRelativeTime(ws.last_transaction)}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openWalletSolscan(ws.wallet_address)}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Transaction Logs */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5" />
+              Logs de Transações ({filteredTransactions.length})
+            </CardTitle>
+            <CardDescription>
+              Histórico completo de todas as transações realizadas
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {filteredTransactions.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                {searchTerm ? "Nenhuma transação encontrada para esta busca." : "Nenhuma transação realizada ainda."}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {filteredTransactions.slice(0, 50).map((tx) => (
+                  <div 
+                    key={tx.id} 
+                    className="p-4 bg-muted/30 rounded-lg border border-border/50 hover:border-border transition-colors"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      {/* Left side - Wallet and Signature */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Wallet className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-mono text-sm">{formatAddress(tx.wallet_address, false)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => openWalletSolscan(tx.wallet_address)}
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        {tx.transaction_signature && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Hash className="w-3 h-3" />
+                            <span className="font-mono text-xs">{formatAddress(tx.transaction_signature, false)}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 w-5 p-0"
+                              onClick={() => openSolscan(tx.transaction_signature)}
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Center - Stats */}
+                      <div className="flex flex-wrap gap-4">
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Contas</p>
+                          <p className="font-bold text-blue-500">{tx.accounts_closed}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Recuperado</p>
+                          <p className="font-bold text-green-500">{formatSol(Number(tx.sol_recovered))} SOL</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Taxa ({tx.fee_percent}%)</p>
+                          <p className="font-bold text-amber-500">{formatSol(Number(tx.fee_collected))} SOL</p>
+                        </div>
+                      </div>
+
+                      {/* Right side - Date */}
+                      <div className="text-right">
+                        <div className="flex items-center gap-1 text-muted-foreground text-sm">
+                          <Calendar className="w-3 h-3" />
+                          {formatDate(tx.created_at)}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {formatRelativeTime(tx.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {filteredTransactions.length > 50 && (
+                  <p className="text-center text-muted-foreground text-sm py-2">
+                    Mostrando 50 de {filteredTransactions.length} transações
+                  </p>
+                )}
               </div>
             )}
           </CardContent>
@@ -411,7 +649,19 @@ const Admin = () => {
                       <tr key={profile.id} className="border-b border-border/50 hover:bg-muted/50">
                         <td className="py-3 px-4">{profile.email || "N/A"}</td>
                         <td className="py-3 px-4 font-mono text-sm">
-                          {formatAddress(profile.wallet_address)}
+                          {profile.wallet_address ? (
+                            <div className="flex items-center gap-2">
+                              {formatAddress(profile.wallet_address)}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => openWalletSolscan(profile.wallet_address!)}
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : "N/A"}
                         </td>
                         <td className="py-3 px-4 text-muted-foreground">
                           {formatDate(profile.created_at)}
