@@ -12,6 +12,8 @@ interface Account {
   address: string;
   rentSol: number;
   selected: boolean;
+  image?: string;
+  mint?: string;
 }
 
 interface ScannerProps {
@@ -46,10 +48,12 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
       const mappedAccounts: Account[] = result.accounts.map((acc, index) => ({
         id: acc.address,
         type: acc.type,
-        name: acc.name || `Token Account #${index + 1}`,
+        name: acc.name || (acc.type === 'nft' ? `NFT #${index + 1}` : `Token Account #${index + 1}`),
         address: acc.address,
         rentSol: acc.rentSol,
-        selected: false
+        selected: false,
+        image: acc.image,
+        mint: acc.mint
       }));
       
       setAccounts(mappedAccounts);

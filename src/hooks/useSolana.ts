@@ -46,6 +46,7 @@ export interface ScannedAccount {
   rentSol: number;
   type: 'token' | 'nft' | 'empty';
   name?: string;
+  image?: string;
 }
 
 interface ScanResult {
@@ -166,13 +167,22 @@ export function useSolana() {
       if (error) throw error;
       if (!data.success) throw new Error(data.error);
 
-      // Add names based on mint addresses (you could enhance this with metadata)
-      const accounts = data.accounts.map((acc: ScannedAccount, index: number) => ({
+      // Use names from the edge function (includes NFT metadata)
+      const accounts: ScannedAccount[] = data.accounts.map((acc: ScannedAccount, index: number) => ({
         ...acc,
-        name: `Token Account #${index + 1}`
+        name: acc.name || (acc.type === 'nft' ? `NFT #${index + 1}` : `Token Account #${index + 1}`)
       }));
 
-      toast.success(`${accounts.length} contas encontradas!`);
+      const nftCount = accounts.filter(a => a.type === 'nft').length;
+      const tokenCount = accounts.filter(a => a.type === 'token').length;
+      
+      if (nftCount > 0 && tokenCount > 0) {
+        toast.success(`${nftCount} NFTs e ${tokenCount} tokens encontrados!`);
+      } else if (nftCount > 0) {
+        toast.success(`${nftCount} NFTs queimáveis encontrados!`);
+      } else {
+        toast.success(`${tokenCount} contas token vazias encontradas!`);
+      }
       
       return {
         accounts,
