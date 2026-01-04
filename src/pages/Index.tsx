@@ -16,8 +16,12 @@ const Index = () => {
     isConnected, 
     publicKey, 
     isConnecting,
+    isScanning,
+    isProcessing,
     connect, 
-    disconnect 
+    disconnect,
+    scanAccounts,
+    closeAccounts
   } = useSolana();
 
   const handleConnectWallet = () => {
@@ -54,6 +58,10 @@ const Index = () => {
         <Scanner 
           walletConnected={isConnected}
           walletAddress={publicKey}
+          scanAccounts={scanAccounts}
+          closeAccounts={closeAccounts}
+          isScanning={isScanning}
+          isProcessing={isProcessing}
         />
         
         <HowItWorks />
