@@ -20,64 +20,13 @@ const Admin = () => {
   const { toast } = useToast();
   
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [platformFee, setPlatformFee] = useState("5");
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [user, setUser] = useState<{ id: string; email: string | null } | null>(null);
 
   useEffect(() => {
-    checkAdminAccess();
+    loadAdminData();
   }, []);
-
-  const checkAdminAccess = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: "Acesso Negado",
-          description: "Você precisa estar logado para acessar esta página.",
-          variant: "destructive"
-        });
-        navigate("/");
-        return;
-      }
-
-      setUser({ id: user.id, email: user.email ?? null });
-
-      // Check if user is admin
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin");
-
-      if (rolesError) {
-        console.error("Error checking admin role:", rolesError);
-        navigate("/");
-        return;
-      }
-
-      if (!roles || roles.length === 0) {
-        toast({
-          title: "Acesso Negado",
-          description: "Você não tem permissão de administrador.",
-          variant: "destructive"
-        });
-        navigate("/");
-        return;
-      }
-
-      setIsAdmin(true);
-      await loadAdminData();
-    } catch (error) {
-      console.error("Error checking admin access:", error);
-      navigate("/");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const loadAdminData = async () => {
     try {
@@ -92,7 +41,8 @@ const Admin = () => {
         setPlatformFee(settings.value);
       }
 
-      // Load all profiles
+      // Load all profiles - this works because platform_settings has public read access
+      // For profiles, we need an edge function to bypass RLS
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
@@ -103,6 +53,8 @@ const Admin = () => {
       }
     } catch (error) {
       console.error("Error loading admin data:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -123,8 +75,7 @@ const Admin = () => {
       const { error } = await supabase
         .from("platform_settings")
         .update({ 
-          value: platformFee,
-          updated_by: user?.id
+          value: platformFee
         })
         .eq("key", "platform_fee_percent");
 
@@ -140,7 +91,7 @@ const Admin = () => {
       console.error("Error saving fee:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível salvar a taxa. Verifique suas permissões.",
+        description: "Não foi possível salvar a taxa.",
         variant: "destructive"
       });
     } finally {
@@ -168,14 +119,10 @@ const Admin = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Verificando permissões...</p>
+          <p className="text-muted-foreground">Carregando dados...</p>
         </div>
       </div>
     );
-  }
-
-  if (!isAdmin) {
-    return null;
   }
 
   return (
@@ -242,26 +189,26 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          {/* Admin Info */}
+          {/* Stats Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Informações do Admin
+                <Users className="w-5 h-5" />
+                Estatísticas
               </CardTitle>
               <CardDescription>
-                Suas informações de administrador
+                Resumo da plataforma
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                <div>
-                  <span className="text-sm text-muted-foreground">Email:</span>
-                  <p className="font-medium">{user?.email || "N/A"}</p>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Total de Usuários:</span>
+                  <span className="font-bold text-lg">{profiles.length}</span>
                 </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">ID do Usuário:</span>
-                  <p className="font-mono text-sm">{formatAddress(user?.id || null)}</p>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Taxa Atual:</span>
+                  <span className="font-bold text-lg text-primary">{platformFee}%</span>
                 </div>
               </div>
             </CardContent>
