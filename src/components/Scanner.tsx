@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink, Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccountCard from "@/components/AccountCard";
 import TransactionSummary from "@/components/TransactionSummary";
@@ -56,6 +56,7 @@ const Scanner = ({
   const [recoveryComplete, setRecoveryComplete] = useState(false);
   const [lastTxSignature, setLastTxSignature] = useState<string | null>(null);
   const [platformFeePercent, setPlatformFeePercent] = useState(5);
+  const [hasAutoScanned, setHasAutoScanned] = useState(false);
 
   const handleScan = useCallback(async () => {
     setScanComplete(false);
@@ -72,7 +73,7 @@ const Scanner = ({
         name: acc.name || (acc.type === 'nft' ? `NFT #${index + 1}` : `Token Account #${index + 1}`),
         address: acc.address,
         rentSol: acc.rentSol,
-        selected: false,
+        selected: true, // Auto-select all accounts
         image: acc.image,
         mint: acc.mint
       }));
@@ -82,6 +83,21 @@ const Scanner = ({
       setScanComplete(true);
     }
   }, [scanAccounts]);
+
+  // Auto-scan when wallet connects
+  useEffect(() => {
+    if (walletConnected && walletAddress && !hasAutoScanned && !isScanning) {
+      setHasAutoScanned(true);
+      handleScan();
+    }
+    // Reset auto-scan flag when wallet disconnects
+    if (!walletConnected) {
+      setHasAutoScanned(false);
+      setAccounts([]);
+      setScanComplete(false);
+      setRecoveryComplete(false);
+    }
+  }, [walletConnected, walletAddress, hasAutoScanned, isScanning, handleScan]);
 
   const handleToggleAccount = (id: string) => {
     setAccounts(prev => prev.map(acc => 
@@ -133,33 +149,7 @@ const Scanner = ({
   return (
     <section id="scanner" className="py-20">
       <div className="container mx-auto px-4">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Scanner de <span className="text-gradient">Contas</span>
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Identifique contas SPL vazias, NFTs queimáveis e contas com rent recuperável.
-            </p>
-          </div>
-
-          {/* Scan Button */}
-          {!scanComplete && !isScanning && (
-            <div className="flex justify-center mb-12">
-              <Button 
-                variant="gradient" 
-                size="xl" 
-                onClick={handleScan}
-                disabled={isScanning}
-                className="min-w-[200px]"
-              >
-                <Search className="w-5 h-5" />
-                Escanear Wallet
-              </Button>
-            </div>
-          )}
-
+        <div className="max-w-4xl mx-auto">
           {/* Scanning Animation */}
           {isScanning && (
             <div className="max-w-2xl mx-auto">
@@ -180,62 +170,99 @@ const Scanner = ({
             </div>
           )}
 
-          {/* Results */}
-          {scanComplete && accounts.length > 0 && (
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Accounts List */}
-              <div className="lg:col-span-2">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground">
-                      {accounts.length} Contas Encontradas
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedAccounts.length} selecionadas
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <Button variant="glass" size="sm" onClick={handleSelectAll}>
-                      {accounts.every(acc => acc.selected) ? "Desmarcar Todas" : "Selecionar Todas"}
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={handleScan} disabled={isScanning}>
-                      <RefreshCw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
-                    </Button>
+          {/* Quick Recovery Card - Main CTA */}
+          {scanComplete && accounts.length > 0 && !recoveryComplete && (
+            <div className="glass-strong rounded-2xl p-8 mb-8 animate-fade-in-up">
+              <div className="text-center mb-6">
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-primary mb-4">
+                  <Coins className="w-10 h-10 text-primary-foreground" />
+                </div>
+                <h2 className="text-3xl font-bold text-foreground mb-2">
+                  {totalRecoverable.toFixed(4)} SOL
+                </h2>
+                <p className="text-muted-foreground">disponível para recuperar</p>
+              </div>
+
+              <div className="bg-muted/50 rounded-xl p-4 mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground">Contas encontradas</span>
+                  <span className="font-bold">{accounts.length}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground">Taxa da plataforma ({platformFeePercent}%)</span>
+                  <span className="text-amber-500">-{platformFee.toFixed(4)} SOL</span>
+                </div>
+                <div className="border-t border-border pt-2 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-foreground">Você recebe</span>
+                    <span className="font-bold text-xl text-green-500">{netAmount.toFixed(4)} SOL</span>
                   </div>
                 </div>
+              </div>
 
-                <div className="grid sm:grid-cols-2 gap-4">
-                  {accounts.map((account, index) => (
+              <Button 
+                variant="gradient" 
+                size="xl" 
+                onClick={handleRecover}
+                disabled={isProcessing || selectedAccounts.length === 0}
+                className="w-full text-lg py-6"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <Coins className="w-6 h-6 mr-2" />
+                    Recuperar {netAmount.toFixed(4)} SOL
+                  </>
+                )}
+              </Button>
+
+              <p className="text-xs text-muted-foreground text-center mt-4">
+                Ao clicar, você confirmará a transação na sua wallet
+              </p>
+
+              {/* Expandable account details */}
+              <details className="mt-6">
+                <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2">
+                  <span>Ver detalhes das {accounts.length} contas</span>
+                </summary>
+                <div className="mt-4 space-y-2 max-h-60 overflow-y-auto">
+                  {accounts.map((account) => (
                     <div 
-                      key={account.id} 
-                      className="animate-fade-in-up"
-                      style={{ animationDelay: `${index * 0.05}s` }}
+                      key={account.id}
+                      onClick={() => handleToggleAccount(account.id)}
+                      className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors ${
+                        account.selected 
+                          ? 'bg-primary/10 border border-primary/30' 
+                          : 'bg-muted/30 border border-transparent hover:bg-muted/50'
+                      }`}
                     >
-                      <AccountCard 
-                        account={account} 
-                        onToggle={handleToggleAccount}
-                      />
+                      <div className="flex items-center gap-3">
+                        <input 
+                          type="checkbox" 
+                          checked={account.selected}
+                          onChange={() => handleToggleAccount(account.id)}
+                          className="rounded"
+                        />
+                        <span className="text-sm font-medium">{account.name}</span>
+                      </div>
+                      <span className="text-sm text-green-500">{account.rentSol.toFixed(4)} SOL</span>
                     </div>
                   ))}
                 </div>
-              </div>
-
-              {/* Summary */}
-              <div className="lg:col-span-1">
-                <div className="sticky top-24">
-                  <TransactionSummary
-                    selectedCount={selectedAccounts.length}
-                    totalRecoverable={totalRecoverable}
-                    platformFee={platformFee}
-                    platformFeePercent={platformFeePercent}
-                    netAmount={netAmount}
-                    isRecovering={isProcessing}
-                    recoveryComplete={recoveryComplete}
-                    onRecover={handleRecover}
-                    txSignature={lastTxSignature}
-                  />
+                <div className="flex justify-between mt-3">
+                  <Button variant="ghost" size="sm" onClick={handleSelectAll}>
+                    {accounts.every(acc => acc.selected) ? "Desmarcar Todas" : "Selecionar Todas"}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleScan} disabled={isScanning}>
+                    <RefreshCw className={`w-4 h-4 mr-1 ${isScanning ? 'animate-spin' : ''}`} />
+                    Re-escanear
+                  </Button>
                 </div>
-              </div>
+              </details>
             </div>
           )}
 
