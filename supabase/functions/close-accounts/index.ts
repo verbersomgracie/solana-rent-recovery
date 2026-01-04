@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -8,7 +10,32 @@ const corsHeaders = {
 
 const SOLANA_RPC_URL = Deno.env.get('SOLANA_RPC_URL') || 'https://api.mainnet-beta.solana.com';
 const PLATFORM_FEE_WALLET = Deno.env.get('PLATFORM_FEE_WALLET');
-const PLATFORM_FEE_PERCENT = 5;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+// Get platform fee from database
+async function getPlatformFeePercent(): Promise<number> {
+  try {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const { data, error } = await supabase
+      .from('platform_settings')
+      .select('value')
+      .eq('key', 'platform_fee_percent')
+      .single();
+    
+    if (error || !data) {
+      console.log('Using default fee: 5%');
+      return 5;
+    }
+    
+    const fee = parseFloat(data.value);
+    console.log(`Platform fee from database: ${fee}%`);
+    return isNaN(fee) ? 5 : fee;
+  } catch (error) {
+    console.error('Error fetching platform fee:', error);
+    return 5;
+  }
+}
 
 // Metaplex Token Metadata Program ID
 const METADATA_PROGRAM_ID = 'metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s';
@@ -367,6 +394,7 @@ serve(async (req) => {
 
     if (action === 'scan') {
       const accounts = await getTokenAccounts(walletAddress);
+      const platformFeePercent = await getPlatformFeePercent();
       
       // Fetch metadata for NFTs in parallel
       const accountsWithMetadata = await Promise.all(
@@ -405,7 +433,7 @@ serve(async (req) => {
       );
       
       const totalRentLamports = accounts.reduce((sum, acc) => sum + acc.lamports, 0);
-      const platformFeeLamports = Math.floor(totalRentLamports * (PLATFORM_FEE_PERCENT / 100));
+      const platformFeeLamports = Math.floor(totalRentLamports * (platformFeePercent / 100));
       const netAmountLamports = totalRentLamports - platformFeeLamports;
 
       const nftCount = accountsWithMetadata.filter(a => a.type === 'nft').length;
@@ -424,7 +452,7 @@ serve(async (req) => {
           totalRentSol: totalRentLamports / 1e9,
           platformFeeLamports,
           platformFeeSol: platformFeeLamports / 1e9,
-          platformFeePercent: PLATFORM_FEE_PERCENT,
+          platformFeePercent,
           netAmountLamports,
           netAmountSol: netAmountLamports / 1e9,
           feeWallet: PLATFORM_FEE_WALLET
@@ -453,7 +481,8 @@ serve(async (req) => {
       }
 
       const totalRentLamports = selectedAccounts.reduce((sum, acc) => sum + acc.lamports, 0);
-      const platformFeeLamports = Math.floor(totalRentLamports * (PLATFORM_FEE_PERCENT / 100));
+      const platformFeePercent = await getPlatformFeePercent();
+      const platformFeeLamports = Math.floor(totalRentLamports * (platformFeePercent / 100));
 
       const { blockhash, lastValidBlockHeight } = await getRecentBlockhash();
 
