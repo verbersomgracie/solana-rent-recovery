@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, Users, Settings, ArrowLeft, Loader2, Save, Percent, 
   TrendingUp, Wallet, Receipt, Coins, Search, RefreshCw, 
-  ExternalLink, Clock, Activity, Calendar, Hash, FlaskConical
+  ExternalLink, Clock, Activity, Calendar, Hash, FlaskConical, Trash2
 } from "lucide-react";
 
 interface Profile {
@@ -55,6 +55,7 @@ const Admin = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isTestingTransaction, setIsTestingTransaction] = useState(false);
+  const [isDeletingTestTransactions, setIsDeletingTestTransactions] = useState(false);
   const [platformFee, setPlatformFee] = useState("5");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -246,6 +247,38 @@ const Admin = () => {
       });
     } finally {
       setIsTestingTransaction(false);
+    }
+  };
+
+  const handleDeleteTestTransactions = async () => {
+    setIsDeletingTestTransactions(true);
+    try {
+      // Delete transactions that have "test" in signature or wallet starts with "Test"
+      const { error } = await supabase
+        .from("transactions")
+        .delete()
+        .or('transaction_signature.ilike.%test%,wallet_address.ilike.Test%');
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Transações de Teste Deletadas",
+        description: "Todas as transações de teste foram removidas.",
+      });
+
+      // Refresh data
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error deleting test transactions:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível deletar as transações de teste.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeletingTestTransactions(false);
     }
   };
 
