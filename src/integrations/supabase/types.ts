@@ -65,6 +65,42 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          accounts_closed: number
+          created_at: string
+          fee_collected: number
+          fee_percent: number
+          id: string
+          sol_recovered: number
+          transaction_signature: string | null
+          user_id: string | null
+          wallet_address: string
+        }
+        Insert: {
+          accounts_closed?: number
+          created_at?: string
+          fee_collected?: number
+          fee_percent?: number
+          id?: string
+          sol_recovered?: number
+          transaction_signature?: string | null
+          user_id?: string | null
+          wallet_address: string
+        }
+        Update: {
+          accounts_closed?: number
+          created_at?: string
+          fee_collected?: number
+          fee_percent?: number
+          id?: string
+          sol_recovered?: number
+          transaction_signature?: string | null
+          user_id?: string | null
+          wallet_address?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
