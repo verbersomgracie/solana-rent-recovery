@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Shield, Users, Settings, ArrowLeft, Loader2, Save, Percent, 
   TrendingUp, Wallet, Receipt, Coins, Search, RefreshCw, 
-  ExternalLink, Clock, Activity, Calendar, Hash
+  ExternalLink, Clock, Activity, Calendar, Hash, FlaskConical
 } from "lucide-react";
 
 interface Profile {
@@ -54,6 +54,7 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTestingTransaction, setIsTestingTransaction] = useState(false);
   const [platformFee, setPlatformFee] = useState("5");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -200,6 +201,51 @@ const Admin = () => {
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleTestTransaction = async () => {
+    setIsTestingTransaction(true);
+    try {
+      // Generate random test data
+      const testWallet = `Test${Math.random().toString(36).substring(2, 10)}...${Math.random().toString(36).substring(2, 6)}`;
+      const accountsClosed = Math.floor(Math.random() * 10) + 1;
+      const solRecovered = Math.random() * 0.5 + 0.01;
+      const feePercent = parseFloat(platformFee) || 5;
+      const feeCollected = solRecovered * (feePercent / 100);
+      const testSignature = `test_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+
+      const { error } = await supabase
+        .from("transactions")
+        .insert({
+          wallet_address: testWallet,
+          accounts_closed: accountsClosed,
+          sol_recovered: solRecovered,
+          fee_collected: feeCollected,
+          fee_percent: feePercent,
+          transaction_signature: testSignature
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Transação de Teste Criada",
+        description: `${accountsClosed} contas, ${solRecovered.toFixed(4)} SOL recuperado`,
+      });
+
+      // Refresh data to show the new transaction
+      await loadAdminData();
+    } catch (error) {
+      console.error("Error creating test transaction:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível criar a transação de teste.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTestingTransaction(false);
     }
   };
 
@@ -389,6 +435,26 @@ const Admin = () => {
                 <p className="text-sm text-muted-foreground">
                   Esta taxa será cobrada sobre o total de SOL recuperado pelo usuário.
                 </p>
+
+                <div className="pt-4 border-t border-border">
+                  <Label className="text-sm text-muted-foreground mb-2 block">Testar Registro de Transações</Label>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleTestTransaction} 
+                    disabled={isTestingTransaction}
+                    className="w-full"
+                  >
+                    {isTestingTransaction ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <FlaskConical className="w-4 h-4 mr-2" />
+                    )}
+                    Simular Transação de Teste
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Cria uma transação fictícia para verificar o registro no banco.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
