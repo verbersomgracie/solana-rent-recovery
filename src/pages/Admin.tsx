@@ -6,13 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Users, Settings, ArrowLeft, Loader2, Save, Percent } from "lucide-react";
+import { Shield, Users, Settings, ArrowLeft, Loader2, Save, Percent, TrendingUp, Wallet, Receipt, Coins } from "lucide-react";
 
 interface Profile {
   id: string;
   email: string | null;
   wallet_address: string | null;
   created_at: string;
+}
+
+interface Transaction {
+  id: string;
+  wallet_address: string;
+  accounts_closed: number;
+  sol_recovered: number;
+  fee_collected: number;
+  fee_percent: number;
+  transaction_signature: string | null;
+  created_at: string;
+}
+
+interface TransactionStats {
+  totalTransactions: number;
+  totalSolRecovered: number;
+  totalFeesCollected: number;
+  totalAccountsClosed: number;
 }
 
 const Admin = () => {
@@ -23,6 +41,13 @@ const Admin = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [platformFee, setPlatformFee] = useState("5");
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [stats, setStats] = useState<TransactionStats>({
+    totalTransactions: 0,
+    totalSolRecovered: 0,
+    totalFeesCollected: 0,
+    totalAccountsClosed: 0
+  });
 
   useEffect(() => {
     loadAdminData();
@@ -35,14 +60,13 @@ const Admin = () => {
         .from("platform_settings")
         .select("*")
         .eq("key", "platform_fee_percent")
-        .single();
+        .maybeSingle();
 
       if (!settingsError && settings) {
         setPlatformFee(settings.value);
       }
 
-      // Load all profiles - this works because platform_settings has public read access
-      // For profiles, we need an edge function to bypass RLS
+      // Load all profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from("profiles")
         .select("*")
@@ -50,6 +74,31 @@ const Admin = () => {
 
       if (!profilesError && profilesData) {
         setProfiles(profilesData);
+      }
+
+      // Load all transactions
+      const { data: transactionsData, error: transactionsError } = await supabase
+        .from("transactions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!transactionsError && transactionsData) {
+        setTransactions(transactionsData);
+        
+        // Calculate stats
+        const totalStats = transactionsData.reduce((acc, tx) => ({
+          totalTransactions: acc.totalTransactions + 1,
+          totalSolRecovered: acc.totalSolRecovered + Number(tx.sol_recovered),
+          totalFeesCollected: acc.totalFeesCollected + Number(tx.fee_collected),
+          totalAccountsClosed: acc.totalAccountsClosed + tx.accounts_closed
+        }), {
+          totalTransactions: 0,
+          totalSolRecovered: 0,
+          totalFeesCollected: 0,
+          totalAccountsClosed: 0
+        });
+        
+        setStats(totalStats);
       }
     } catch (error) {
       console.error("Error loading admin data:", error);
@@ -114,6 +163,10 @@ const Admin = () => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
+  const formatSol = (value: number) => {
+    return value.toFixed(4);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -142,6 +195,57 @@ const Admin = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Transaction Stats */}
+        <div className="grid gap-4 md:grid-cols-4 mb-6">
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total de Transações</p>
+                  <p className="text-3xl font-bold">{stats.totalTransactions}</p>
+                </div>
+                <Receipt className="w-10 h-10 text-primary opacity-80" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">SOL Recuperado</p>
+                  <p className="text-3xl font-bold">{formatSol(stats.totalSolRecovered)}</p>
+                </div>
+                <Coins className="w-10 h-10 text-green-500 opacity-80" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Taxas Coletadas</p>
+                  <p className="text-3xl font-bold">{formatSol(stats.totalFeesCollected)}</p>
+                </div>
+                <TrendingUp className="w-10 h-10 text-amber-500 opacity-80" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Contas Fechadas</p>
+                  <p className="text-3xl font-bold">{stats.totalAccountsClosed}</p>
+                </div>
+                <Wallet className="w-10 h-10 text-blue-500 opacity-80" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2">
           {/* Platform Fee Settings */}
           <Card>
@@ -194,10 +298,10 @@ const Admin = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="w-5 h-5" />
-                Estatísticas
+                Resumo Geral
               </CardTitle>
               <CardDescription>
-                Resumo da plataforma
+                Visão geral da plataforma
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -210,10 +314,71 @@ const Admin = () => {
                   <span className="text-sm text-muted-foreground">Taxa Atual:</span>
                   <span className="font-bold text-lg text-primary">{platformFee}%</span>
                 </div>
+                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                  <span className="text-sm text-muted-foreground">Média SOL/Transação:</span>
+                  <span className="font-bold text-lg">
+                    {stats.totalTransactions > 0 
+                      ? formatSol(stats.totalSolRecovered / stats.totalTransactions) 
+                      : "0.0000"}
+                  </span>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Recent Transactions */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="w-5 h-5" />
+              Transações Recentes ({transactions.length})
+            </CardTitle>
+            <CardDescription>
+              Histórico de transações realizadas na plataforma
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {transactions.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                Nenhuma transação realizada ainda.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Wallet</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Contas</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">SOL Recuperado</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Taxa</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Data</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.slice(0, 20).map((tx) => (
+                      <tr key={tx.id} className="border-b border-border/50 hover:bg-muted/50">
+                        <td className="py-3 px-4 font-mono text-sm">
+                          {formatAddress(tx.wallet_address)}
+                        </td>
+                        <td className="py-3 px-4">{tx.accounts_closed}</td>
+                        <td className="py-3 px-4 text-green-500 font-medium">
+                          {formatSol(Number(tx.sol_recovered))} SOL
+                        </td>
+                        <td className="py-3 px-4 text-amber-500">
+                          {formatSol(Number(tx.fee_collected))} SOL ({tx.fee_percent}%)
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {formatDate(tx.created_at)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Users List */}
         <Card className="mt-6">
