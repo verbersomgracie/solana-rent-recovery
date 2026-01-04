@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import Scanner from "@/components/Scanner";
@@ -7,13 +8,27 @@ import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 import WalletModal from "@/components/WalletModal";
 import { useSolana } from "@/hooks/useSolana";
-import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [simulationEnabled, setSimulationEnabled] = useState(false);
   
-  // Simulation mode controlled by environment variable (disabled in production by default)
-  const simulationEnabled = import.meta.env.VITE_ENABLE_SIMULATION === 'true';
+  // Fetch simulation mode from database
+  useEffect(() => {
+    const fetchSimulationMode = async () => {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "simulation_mode_enabled")
+        .maybeSingle();
+      
+      if (!error && data) {
+        setSimulationEnabled(data.value === 'true');
+      }
+    };
+    fetchSimulationMode();
+  }, []);
   
   const { 
     isConnected, 
