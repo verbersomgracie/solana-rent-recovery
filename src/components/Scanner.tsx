@@ -42,6 +42,7 @@ interface ScannerProps {
   closeAccounts: (addresses: string[]) => Promise<TransactionResult>;
   isScanning: boolean;
   isProcessing: boolean;
+  simulationMode?: boolean;
 }
 
 const Scanner = ({ 
@@ -50,7 +51,8 @@ const Scanner = ({
   scanAccounts,
   closeAccounts,
   isScanning,
-  isProcessing
+  isProcessing,
+  simulationMode = false
 }: ScannerProps) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [scanComplete, setScanComplete] = useState(false);
@@ -60,6 +62,33 @@ const Scanner = ({
   const [hasAutoScanned, setHasAutoScanned] = useState(false);
   const [solPrice, setSolPrice] = useState<number | null>(null);
   const [recoveredAmount, setRecoveredAmount] = useState(0);
+  const [isSimulating, setIsSimulating] = useState(false);
+
+  // Simulate scanning with fake accounts
+  const simulateScan = useCallback(async () => {
+    setIsSimulating(true);
+    setScanComplete(false);
+    setRecoveryComplete(false);
+    setLastTxSignature(null);
+    setAccounts([]);
+
+    // Simulate loading delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    const fakeAccounts: Account[] = [
+      { id: 'sim-1', type: 'token', name: 'USDC Token Account', address: 'Sim1...Demo', rentSol: 0.00203928, selected: true },
+      { id: 'sim-2', type: 'token', name: 'BONK Token Account', address: 'Sim2...Demo', rentSol: 0.00203928, selected: true },
+      { id: 'sim-3', type: 'nft', name: 'Mad Lads #1234', address: 'Sim3...Demo', rentSol: 0.00203928, selected: true },
+      { id: 'sim-4', type: 'nft', name: 'DeGods #5678', address: 'Sim4...Demo', rentSol: 0.00203928, selected: true },
+      { id: 'sim-5', type: 'empty', name: 'Empty Account', address: 'Sim5...Demo', rentSol: 0.00089088, selected: true },
+    ];
+
+    setAccounts(fakeAccounts);
+    setPlatformFeePercent(5);
+    setScanComplete(true);
+    setIsSimulating(false);
+  }, []);
+
 
   // Fetch SOL price
   useEffect(() => {
@@ -186,7 +215,22 @@ const Scanner = ({
     }
   }, [selectedAccounts, closeAccounts, netAmount]);
 
-  if (!walletConnected) {
+  // Simulate recovery
+  const simulateRecover = useCallback(async () => {
+    setIsSimulating(true);
+    
+    // Simulate transaction delay
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    
+    setRecoveredAmount(netAmount);
+    setRecoveryComplete(true);
+    setLastTxSignature('SimTx...DemoSignature123456789');
+    setAccounts([]);
+    triggerConfetti();
+    setIsSimulating(false);
+  }, [netAmount]);
+
+  if (!walletConnected && !scanComplete) {
     return (
       <section id="scanner" className="py-20">
         <div className="container mx-auto px-4">
@@ -195,9 +239,34 @@ const Scanner = ({
               <Search className="w-8 h-8 text-muted-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-4">Conecte sua Wallet</h2>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mb-6">
               Conecte sua wallet Solana para escanear suas contas e recuperar SOL preso em rent.
             </p>
+            
+            {/* Simulation Mode */}
+            {simulationMode && (
+              <div className="mt-6 pt-6 border-t border-border">
+                <p className="text-sm text-muted-foreground mb-3">Ou teste o sistema:</p>
+                <Button 
+                  variant="outline" 
+                  onClick={simulateScan}
+                  disabled={isSimulating}
+                  className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+                >
+                  {isSimulating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Simulando...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 mr-2" />
+                      🧪 Simular Escaneamento
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -208,8 +277,15 @@ const Scanner = ({
     <section id="scanner" className="py-20">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
+          {/* Simulation Mode Banner */}
+          {simulationMode && !walletConnected && scanComplete && (
+            <div className="mb-4 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg text-center">
+              <span className="text-amber-500 text-sm font-medium">🧪 Modo Simulação - Dados fictícios para demonstração</span>
+            </div>
+          )}
+
           {/* Scanning Animation */}
-          {isScanning && (
+          {(isScanning || isSimulating) && (
             <div className="max-w-2xl mx-auto">
               <div className="glass-strong rounded-2xl p-8 text-center">
                 <div className="relative w-24 h-24 mx-auto mb-6">
@@ -219,7 +295,9 @@ const Scanner = ({
                     <Search className="w-8 h-8 text-primary" />
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-foreground mb-2">Escaneando Blockchain</h3>
+                <h3 className="text-xl font-bold text-foreground mb-2">
+                  {isSimulating ? '🧪 Simulando Escaneamento' : 'Escaneando Blockchain'}
+                </h3>
                 <p className="text-muted-foreground">Buscando contas token e NFTs na Solana...</p>
                 <div className="mt-6 h-2 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-primary animate-shimmer" style={{ width: "60%" }} />
@@ -272,19 +350,19 @@ const Scanner = ({
               <Button 
                 variant="gradient" 
                 size="xl" 
-                onClick={handleRecover}
-                disabled={isProcessing || selectedAccounts.length === 0}
+                onClick={simulationMode && !walletConnected ? simulateRecover : handleRecover}
+                disabled={(isProcessing || isSimulating) || selectedAccounts.length === 0}
                 className="w-full text-lg py-6"
               >
-                {isProcessing ? (
+                {(isProcessing || isSimulating) ? (
                   <>
                     <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                    Processando...
+                    {isSimulating ? 'Simulando...' : 'Processando...'}
                   </>
                 ) : (
                   <>
                     <Coins className="w-6 h-6 mr-2" />
-                    Recuperar {netAmount.toFixed(4)} SOL
+                    {simulationMode && !walletConnected ? '🧪 ' : ''}Recuperar {netAmount.toFixed(4)} SOL
                   </>
                 )}
               </Button>
