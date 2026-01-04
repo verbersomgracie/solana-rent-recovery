@@ -1,1 +1,4 @@
 project_id = "odzvujigmveepnpuoqtr"
+
+[functions.close-accounts]
+verify_jwt = false
