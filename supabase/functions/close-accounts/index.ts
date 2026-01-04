@@ -535,6 +535,7 @@ serve(async (req) => {
           totalRentSol: totalRentLamports / 1e9,
           platformFeeLamports,
           platformFeeSol: platformFeeLamports / 1e9,
+          platformFeePercent,
           netAmountLamports: totalRentLamports - platformFeeLamports,
           netAmountSol: (totalRentLamports - platformFeeLamports) / 1e9,
           feeWallet: PLATFORM_FEE_WALLET
