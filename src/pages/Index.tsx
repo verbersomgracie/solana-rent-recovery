@@ -62,6 +62,7 @@ const Index = () => {
           closeAccounts={closeAccounts}
           isScanning={isScanning}
           isProcessing={isProcessing}
+          simulationMode={true}
         />
         
         <HowItWorks />
