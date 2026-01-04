@@ -3,7 +3,7 @@ import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink } from "lucide-r
 import { Button } from "@/components/ui/button";
 import AccountCard from "@/components/AccountCard";
 import TransactionSummary from "@/components/TransactionSummary";
-import { useSolana, ScannedAccount } from "@/hooks/useSolana";
+import { ScannedAccount } from "@/hooks/useSolana";
 
 interface Account {
   id: string;
@@ -16,25 +16,46 @@ interface Account {
   mint?: string;
 }
 
+interface ScanResult {
+  accounts: ScannedAccount[];
+  summary: {
+    totalAccounts: number;
+    totalRentSol: number;
+    platformFeeSol: number;
+    platformFeePercent: number;
+    netAmountSol: number;
+    feeWallet: string;
+  };
+}
+
+interface TransactionResult {
+  success: boolean;
+  signature?: string;
+  error?: string;
+}
+
 interface ScannerProps {
   walletConnected: boolean;
   walletAddress: string | null;
-  onScanWithSolana?: () => Promise<void>;
+  scanAccounts: () => Promise<ScanResult | null>;
+  closeAccounts: (addresses: string[]) => Promise<TransactionResult>;
+  isScanning: boolean;
+  isProcessing: boolean;
 }
 
-const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
+const Scanner = ({ 
+  walletConnected, 
+  walletAddress, 
+  scanAccounts,
+  closeAccounts,
+  isScanning,
+  isProcessing
+}: ScannerProps) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [scanComplete, setScanComplete] = useState(false);
   const [recoveryComplete, setRecoveryComplete] = useState(false);
   const [lastTxSignature, setLastTxSignature] = useState<string | null>(null);
   const [platformFeePercent, setPlatformFeePercent] = useState(5);
-
-  const { 
-    isScanning, 
-    isProcessing, 
-    scanAccounts, 
-    closeAccounts 
-  } = useSolana();
 
   const handleScan = useCallback(async () => {
     setScanComplete(false);
@@ -87,7 +108,6 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
     if (result.success) {
       setRecoveryComplete(true);
       setLastTxSignature(result.signature || null);
-      // Remove recovered accounts from the list
       setAccounts(prev => prev.filter(acc => !acc.selected));
     }
   }, [selectedAccounts, closeAccounts]);
@@ -125,7 +145,7 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
           </div>
 
           {/* Scan Button */}
-          {!scanComplete && (
+          {!scanComplete && !isScanning && (
             <div className="flex justify-center mb-12">
               <Button 
                 variant="gradient" 
@@ -134,17 +154,8 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
                 disabled={isScanning}
                 className="min-w-[200px]"
               >
-                {isScanning ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Escaneando...
-                  </>
-                ) : (
-                  <>
-                    <Search className="w-5 h-5" />
-                    Escanear Wallet
-                  </>
-                )}
+                <Search className="w-5 h-5" />
+                Escanear Wallet
               </Button>
             </div>
           )}
@@ -161,7 +172,7 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-2">Escaneando Blockchain</h3>
-                <p className="text-muted-foreground">Buscando contas token na Solana...</p>
+                <p className="text-muted-foreground">Buscando contas token e NFTs na Solana...</p>
                 <div className="mt-6 h-2 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-primary animate-shimmer" style={{ width: "60%" }} />
                 </div>
