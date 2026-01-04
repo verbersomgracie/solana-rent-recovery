@@ -1,5 +1,3 @@
-import { useState } from "react";
-import { toast } from "sonner";
 import Header from "@/components/Header";
 import HeroSection from "@/components/HeroSection";
 import Scanner from "@/components/Scanner";
@@ -8,38 +6,41 @@ import FeesSection from "@/components/FeesSection";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 import WalletModal from "@/components/WalletModal";
+import { useSolana } from "@/hooks/useSolana";
+import { useState } from "react";
 
 const Index = () => {
-  const [walletConnected, setWalletConnected] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  
+  const { 
+    isConnected, 
+    publicKey, 
+    isConnecting,
+    connect, 
+    disconnect 
+  } = useSolana();
 
   const handleConnectWallet = () => {
     setShowWalletModal(true);
   };
 
-  const handleSelectWallet = (wallet: string) => {
-    // Simulate wallet connection
-    const mockAddress = "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU";
-    setWalletAddress(mockAddress);
-    setWalletConnected(true);
-    setShowWalletModal(false);
-    toast.success(`${wallet} conectada com sucesso!`, {
-      description: `Endereço: ${mockAddress.slice(0, 8)}...${mockAddress.slice(-8)}`
-    });
+  const handleSelectWallet = async (wallet: string): Promise<boolean> => {
+    const success = await connect(wallet);
+    if (success) {
+      setShowWalletModal(false);
+    }
+    return success;
   };
 
   const handleDisconnectWallet = () => {
-    setWalletConnected(false);
-    setWalletAddress(null);
-    toast.info("Wallet desconectada");
+    disconnect();
   };
 
   return (
     <div className="min-h-screen">
       <Header
-        walletConnected={walletConnected}
-        walletAddress={walletAddress}
+        walletConnected={isConnected}
+        walletAddress={publicKey}
         onConnectWallet={handleConnectWallet}
         onDisconnectWallet={handleDisconnectWallet}
       />
@@ -47,12 +48,12 @@ const Index = () => {
       <main>
         <HeroSection 
           onConnectWallet={handleConnectWallet}
-          walletConnected={walletConnected}
+          walletConnected={isConnected}
         />
         
         <Scanner 
-          walletConnected={walletConnected}
-          walletAddress={walletAddress}
+          walletConnected={isConnected}
+          walletAddress={publicKey}
         />
         
         <HowItWorks />
@@ -68,6 +69,7 @@ const Index = () => {
         isOpen={showWalletModal}
         onClose={() => setShowWalletModal(false)}
         onSelectWallet={handleSelectWallet}
+        isConnecting={isConnecting}
       />
     </div>
   );

@@ -1,4 +1,4 @@
-import { Flame, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Flame, Loader2, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface TransactionSummaryProps {
@@ -10,6 +10,7 @@ interface TransactionSummaryProps {
   isRecovering: boolean;
   recoveryComplete: boolean;
   onRecover: () => void;
+  txSignature?: string | null;
 }
 
 const TransactionSummary = ({
@@ -20,7 +21,8 @@ const TransactionSummary = ({
   netAmount,
   isRecovering,
   recoveryComplete,
-  onRecover
+  onRecover,
+  txSignature
 }: TransactionSummaryProps) => {
   return (
     <div className="glass-strong rounded-2xl overflow-hidden">
@@ -68,7 +70,7 @@ const TransactionSummary = ({
         </div>
 
         {/* Warning */}
-        {selectedCount > 0 && (
+        {selectedCount > 0 && !recoveryComplete && (
           <div className="flex items-start gap-3 p-4 rounded-lg bg-warning/10 border border-warning/20">
             <AlertTriangle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
             <p className="text-sm text-warning/90">
@@ -77,12 +79,26 @@ const TransactionSummary = ({
           </div>
         )}
 
+        {/* Transaction Link */}
+        {txSignature && (
+          <a
+            href={`https://solscan.io/tx/${txSignature}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 p-3 rounded-lg bg-success/10 border border-success/20 text-success hover:bg-success/20 transition-colors"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-sm">Ver transação no Solscan</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
+
         {/* Action Button */}
         <Button
           variant={recoveryComplete ? "success" : "gradient"}
           size="xl"
           className="w-full"
-          disabled={selectedCount === 0 || isRecovering}
+          disabled={selectedCount === 0 || isRecovering || recoveryComplete}
           onClick={onRecover}
         >
           {isRecovering ? (
