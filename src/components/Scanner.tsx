@@ -1,47 +1,62 @@
-import { useState, useEffect } from "react";
-import { Search, Loader2, CheckCircle2, RefreshCw } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import AccountCard, { Account } from "@/components/AccountCard";
+import AccountCard from "@/components/AccountCard";
 import TransactionSummary from "@/components/TransactionSummary";
+import { useSolana, ScannedAccount } from "@/hooks/useSolana";
+
+interface Account {
+  id: string;
+  type: 'token' | 'nft' | 'empty';
+  name: string;
+  address: string;
+  rentSol: number;
+  selected: boolean;
+}
 
 interface ScannerProps {
   walletConnected: boolean;
   walletAddress: string | null;
+  onScanWithSolana?: () => Promise<void>;
 }
 
-// Mock data for demonstration
-const mockAccounts: Account[] = [
-  { id: "1", type: "token", name: "USDC Token Account", address: "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU", rentSol: 0.00203928, selected: false },
-  { id: "2", type: "nft", name: "DeGods #4521", address: "DGodsfNtfQR7xGT3E8RhvZVMw6YoxqwqU32qFRzjVe", rentSol: 0.00561672, selected: false },
-  { id: "3", type: "empty", name: "Conta Vazia #1", address: "EmptyAcc1xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZ", rentSol: 0.00203928, selected: false },
-  { id: "4", type: "token", name: "BONK Token Account", address: "BonkxKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJo", rentSol: 0.00203928, selected: false },
-  { id: "5", type: "nft", name: "y00ts #8923", address: "y00tsNtfQR7xGT3E8RhvZVMw6YoxqwqU32qFRzjVe", rentSol: 0.00561672, selected: false },
-  { id: "6", type: "token", name: "RAY Token Account", address: "RayXxKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJo", rentSol: 0.00203928, selected: false },
-  { id: "7", type: "empty", name: "Conta Vazia #2", address: "EmptyAcc2xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZ", rentSol: 0.00203928, selected: false },
-  { id: "8", type: "nft", name: "SMB #1234", address: "SMBxxxfQR7xGT3E8RhvZVMw6YoxqwqU32qFRzjVe", rentSol: 0.00561672, selected: false },
-];
-
 const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanComplete, setScanComplete] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [isRecovering, setIsRecovering] = useState(false);
+  const [scanComplete, setScanComplete] = useState(false);
   const [recoveryComplete, setRecoveryComplete] = useState(false);
+  const [lastTxSignature, setLastTxSignature] = useState<string | null>(null);
+  const [platformFeePercent, setPlatformFeePercent] = useState(5);
 
-  const platformFeePercent = 5;
+  const { 
+    isScanning, 
+    isProcessing, 
+    scanAccounts, 
+    closeAccounts 
+  } = useSolana();
 
-  const handleScan = async () => {
-    setIsScanning(true);
+  const handleScan = useCallback(async () => {
     setScanComplete(false);
     setRecoveryComplete(false);
+    setLastTxSignature(null);
+    setAccounts([]);
     
-    // Simulate scanning delay
-    await new Promise(resolve => setTimeout(resolve, 2500));
+    const result = await scanAccounts();
     
-    setAccounts(mockAccounts);
-    setIsScanning(false);
-    setScanComplete(true);
-  };
+    if (result) {
+      const mappedAccounts: Account[] = result.accounts.map((acc, index) => ({
+        id: acc.address,
+        type: acc.type,
+        name: acc.name || `Token Account #${index + 1}`,
+        address: acc.address,
+        rentSol: acc.rentSol,
+        selected: false
+      }));
+      
+      setAccounts(mappedAccounts);
+      setPlatformFeePercent(result.summary.platformFeePercent);
+      setScanComplete(true);
+    }
+  }, [scanAccounts]);
 
   const handleToggleAccount = (id: string) => {
     setAccounts(prev => prev.map(acc => 
@@ -59,20 +74,19 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
   const platformFee = totalRecoverable * (platformFeePercent / 100);
   const netAmount = totalRecoverable - platformFee;
 
-  const handleRecover = async () => {
+  const handleRecover = useCallback(async () => {
     if (selectedAccounts.length === 0) return;
     
-    setIsRecovering(true);
+    const accountAddresses = selectedAccounts.map(acc => acc.address);
+    const result = await closeAccounts(accountAddresses);
     
-    // Simulate transaction
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    setIsRecovering(false);
-    setRecoveryComplete(true);
-    
-    // Remove recovered accounts
-    setAccounts(prev => prev.filter(acc => !acc.selected));
-  };
+    if (result.success) {
+      setRecoveryComplete(true);
+      setLastTxSignature(result.signature || null);
+      // Remove recovered accounts from the list
+      setAccounts(prev => prev.filter(acc => !acc.selected));
+    }
+  }, [selectedAccounts, closeAccounts]);
 
   if (!walletConnected) {
     return (
@@ -143,7 +157,7 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-2">Escaneando Blockchain</h3>
-                <p className="text-muted-foreground">Buscando contas associadas à sua wallet...</p>
+                <p className="text-muted-foreground">Buscando contas token na Solana...</p>
                 <div className="mt-6 h-2 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-primary animate-shimmer" style={{ width: "60%" }} />
                 </div>
@@ -169,8 +183,8 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
                     <Button variant="glass" size="sm" onClick={handleSelectAll}>
                       {accounts.every(acc => acc.selected) ? "Desmarcar Todas" : "Selecionar Todas"}
                     </Button>
-                    <Button variant="outline" size="sm" onClick={handleScan}>
-                      <RefreshCw className="w-4 h-4" />
+                    <Button variant="outline" size="sm" onClick={handleScan} disabled={isScanning}>
+                      <RefreshCw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
                     </Button>
                   </div>
                 </div>
@@ -200,9 +214,10 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
                     platformFee={platformFee}
                     platformFeePercent={platformFeePercent}
                     netAmount={netAmount}
-                    isRecovering={isRecovering}
+                    isRecovering={isProcessing}
                     recoveryComplete={recoveryComplete}
                     onRecover={handleRecover}
+                    txSignature={lastTxSignature}
                   />
                 </div>
               </div>
@@ -215,17 +230,32 @@ const Scanner = ({ walletConnected, walletAddress }: ScannerProps) => {
               <div className="w-16 h-16 rounded-2xl bg-success/20 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 className="w-8 h-8 text-success" />
               </div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">Tudo Limpo!</h3>
+              <h3 className="text-2xl font-bold text-foreground mb-4">
+                {recoveryComplete ? "SOL Recuperado!" : "Tudo Limpo!"}
+              </h3>
               <p className="text-muted-foreground mb-6">
                 {recoveryComplete 
                   ? "Todas as contas selecionadas foram fechadas com sucesso e o SOL foi recuperado!"
                   : "Não encontramos contas vazias ou NFTs queimáveis na sua wallet."
                 }
               </p>
-              <Button variant="glass" onClick={handleScan}>
-                <RefreshCw className="w-4 h-4" />
-                Escanear Novamente
-              </Button>
+              {lastTxSignature && (
+                <a
+                  href={`https://solscan.io/tx/${lastTxSignature}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-primary hover:underline mb-6"
+                >
+                  Ver transação no Solscan
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+              <div className="mt-4">
+                <Button variant="glass" onClick={handleScan} disabled={isScanning}>
+                  <RefreshCw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
+                  Escanear Novamente
+                </Button>
+              </div>
             </div>
           )}
         </div>
