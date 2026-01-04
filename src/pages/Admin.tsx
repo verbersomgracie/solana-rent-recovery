@@ -487,6 +487,23 @@ const Admin = () => {
                   <p className="text-xs text-muted-foreground mt-2">
                     Cria uma transação fictícia para verificar o registro no banco.
                   </p>
+                  
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleDeleteTestTransactions} 
+                    disabled={isDeletingTestTransactions}
+                    className="w-full mt-3"
+                  >
+                    {isDeletingTestTransactions ? (
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 mr-2" />
+                    )}
+                    Deletar Transações de Teste
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Remove todas as transações com "test" na assinatura ou wallet.
+                  </p>
                 </div>
               </div>
             </CardContent>
