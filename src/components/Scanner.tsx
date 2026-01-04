@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
-import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink, Coins } from "lucide-react";
+import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink, Coins, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccountCard from "@/components/AccountCard";
 import TransactionSummary from "@/components/TransactionSummary";
 import { ScannedAccount } from "@/hooks/useSolana";
+import confetti from "canvas-confetti";
 
 interface Account {
   id: string;
@@ -57,6 +58,60 @@ const Scanner = ({
   const [lastTxSignature, setLastTxSignature] = useState<string | null>(null);
   const [platformFeePercent, setPlatformFeePercent] = useState(5);
   const [hasAutoScanned, setHasAutoScanned] = useState(false);
+  const [solPrice, setSolPrice] = useState<number | null>(null);
+  const [recoveredAmount, setRecoveredAmount] = useState(0);
+
+  // Fetch SOL price
+  useEffect(() => {
+    const fetchSolPrice = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+        const data = await response.json();
+        setSolPrice(data.solana.usd);
+      } catch (error) {
+        console.error('Failed to fetch SOL price:', error);
+      }
+    };
+    fetchSolPrice();
+    // Refresh price every 60 seconds
+    const interval = setInterval(fetchSolPrice, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const triggerConfetti = () => {
+    // First burst
+    confetti({
+      particleCount: 100,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#14F195', '#9945FF', '#FFD700']
+    });
+    // Second burst after delay
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: ['#14F195', '#9945FF', '#FFD700']
+      });
+    }, 150);
+    setTimeout(() => {
+      confetti({
+        particleCount: 50,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: ['#14F195', '#9945FF', '#FFD700']
+      });
+    }, 300);
+  };
+
+  const formatUSD = (sol: number) => {
+    if (!solPrice) return null;
+    const usd = sol * solPrice;
+    return usd.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+  };
 
   const handleScan = useCallback(async () => {
     setScanComplete(false);
@@ -122,11 +177,14 @@ const Scanner = ({
     const result = await closeAccounts(accountAddresses);
     
     if (result.success) {
+      setRecoveredAmount(netAmount);
       setRecoveryComplete(true);
       setLastTxSignature(result.signature || null);
       setAccounts(prev => prev.filter(acc => !acc.selected));
+      // Trigger confetti celebration!
+      triggerConfetti();
     }
-  }, [selectedAccounts, closeAccounts]);
+  }, [selectedAccounts, closeAccounts, netAmount]);
 
   if (!walletConnected) {
     return (
@@ -177,10 +235,16 @@ const Scanner = ({
                 <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-primary mb-4">
                   <Coins className="w-10 h-10 text-primary-foreground" />
                 </div>
-                <h2 className="text-3xl font-bold text-foreground mb-2">
+                <h2 className="text-3xl font-bold text-foreground mb-1">
                   {totalRecoverable.toFixed(4)} SOL
                 </h2>
-                <p className="text-muted-foreground">disponível para recuperar</p>
+                {solPrice && (
+                  <p className="text-lg text-green-500 font-semibold flex items-center justify-center gap-1">
+                    <DollarSign className="w-4 h-4" />
+                    {formatUSD(totalRecoverable)}
+                  </p>
+                )}
+                <p className="text-muted-foreground mt-1">disponível para recuperar</p>
               </div>
 
               <div className="bg-muted/50 rounded-xl p-4 mb-6">
@@ -195,7 +259,12 @@ const Scanner = ({
                 <div className="border-t border-border pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-foreground">Você recebe</span>
-                    <span className="font-bold text-xl text-green-500">{netAmount.toFixed(4)} SOL</span>
+                    <div className="text-right">
+                      <span className="font-bold text-xl text-green-500 block">{netAmount.toFixed(4)} SOL</span>
+                      {solPrice && (
+                        <span className="text-sm text-green-400">{formatUSD(netAmount)}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -266,18 +335,30 @@ const Scanner = ({
             </div>
           )}
 
-          {/* Empty State */}
+          {/* Empty State / Success State */}
           {scanComplete && accounts.length === 0 && (
-            <div className="max-w-2xl mx-auto text-center glass-strong rounded-2xl p-12">
-              <div className="w-16 h-16 rounded-2xl bg-success/20 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-8 h-8 text-success" />
+            <div className="max-w-2xl mx-auto text-center glass-strong rounded-2xl p-12 animate-fade-in-up">
+              <div className={`w-20 h-20 rounded-full ${recoveryComplete ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-success/20'} flex items-center justify-center mx-auto mb-6`}>
+                {recoveryComplete ? (
+                  <Coins className="w-10 h-10 text-white" />
+                ) : (
+                  <CheckCircle2 className="w-10 h-10 text-success" />
+                )}
               </div>
-              <h3 className="text-2xl font-bold text-foreground mb-4">
-                {recoveryComplete ? "SOL Recuperado!" : "Tudo Limpo!"}
+              <h3 className="text-3xl font-bold text-foreground mb-2">
+                {recoveryComplete ? "🎉 SOL Recuperado!" : "Tudo Limpo!"}
               </h3>
+              {recoveryComplete && recoveredAmount > 0 && (
+                <div className="mb-4">
+                  <p className="text-2xl font-bold text-green-500">{recoveredAmount.toFixed(4)} SOL</p>
+                  {solPrice && (
+                    <p className="text-lg text-green-400">{formatUSD(recoveredAmount)}</p>
+                  )}
+                </div>
+              )}
               <p className="text-muted-foreground mb-6">
                 {recoveryComplete 
-                  ? "Todas as contas selecionadas foram fechadas com sucesso e o SOL foi recuperado!"
+                  ? "Todas as contas foram fechadas com sucesso e o SOL foi enviado para sua wallet!"
                   : "Não encontramos contas vazias ou NFTs queimáveis na sua wallet."
                 }
               </p>
