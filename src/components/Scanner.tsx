@@ -6,6 +6,7 @@ import TransactionSummary from "@/components/TransactionSummary";
 import { ScannedAccount } from "@/hooks/useSolana";
 import { UserStats } from "@/hooks/useGamification";
 import { VIP_TIERS, getVIPTierIndex } from "@/hooks/useVIPTier";
+import { useTranslation } from "@/hooks/useTranslation";
 import confetti from "canvas-confetti";
 
 interface Account {
@@ -62,6 +63,7 @@ const Scanner = ({
   vipFeePercent = 5,
   userStats
 }: ScannerProps) => {
+  const { t } = useTranslation();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [scanComplete, setScanComplete] = useState(false);
   const [recoveryComplete, setRecoveryComplete] = useState(false);
@@ -250,15 +252,15 @@ const Scanner = ({
         <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
           <Search className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h2 className="text-2xl font-bold text-foreground mb-4">Conecte sua Wallet</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-4">{t('scanner.connectWallet')}</h2>
         <p className="text-muted-foreground mb-6">
-          Conecte sua wallet Solana para escanear suas contas e recuperar SOL preso em rent.
+          {t('scanner.connectDesc')}
         </p>
         
         {/* Simulation Mode */}
         {simulationMode && (
           <div className="mt-6 pt-6 border-t border-border">
-            <p className="text-sm text-muted-foreground mb-3">Ou teste o sistema:</p>
+            <p className="text-sm text-muted-foreground mb-3">{t('scanner.orTest')}:</p>
             <Button 
               variant="outline" 
               onClick={simulateScan}
@@ -268,12 +270,12 @@ const Scanner = ({
               {isSimulating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Simulando...
+                  {t('scanner.simulating')}
                 </>
               ) : (
                 <>
                   <Search className="w-4 h-4 mr-2" />
-                  🧪 Simular Escaneamento
+                  🧪 {t('scanner.simulate')}
                 </>
               )}
             </Button>
@@ -288,7 +290,7 @@ const Scanner = ({
           {/* Simulation Mode Banner */}
           {simulationMode && !walletConnected && scanComplete && (
             <div className="mb-4 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg text-center">
-              <span className="text-amber-500 text-sm font-medium">🧪 Modo Simulação - Dados fictícios para demonstração</span>
+              <span className="text-amber-500 text-sm font-medium">🧪 {t('scanner.simulationMode')}</span>
             </div>
           )}
 
@@ -304,9 +306,9 @@ const Scanner = ({
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-foreground mb-2">
-                  {isSimulating ? '🧪 Simulando Escaneamento' : 'Escaneando Blockchain'}
+                  {isSimulating ? `🧪 ${t('scanner.simulating')}` : t('scanner.scanning')}
                 </h3>
-                <p className="text-muted-foreground">Buscando contas token e NFTs na Solana...</p>
+                <p className="text-muted-foreground">{t('scanner.searchingAccounts')}</p>
                 <div className="mt-6 h-2 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-gradient-primary animate-shimmer" style={{ width: "60%" }} />
                 </div>
@@ -330,17 +332,17 @@ const Scanner = ({
                     {formatUSD(totalRecoverable)}
                   </p>
                 )}
-                <p className="text-muted-foreground mt-1">disponível para recuperar</p>
+                <p className="text-muted-foreground mt-1">{t('scanner.availableToRecover')}</p>
               </div>
 
               <div className="bg-muted/50 rounded-xl p-4 mb-6">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground">Contas encontradas</span>
+                  <span className="text-muted-foreground">{t('scanner.accountsFound')}</span>
                   <span className="font-bold">{accounts.length}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">Taxa da plataforma</span>
+                    <span className="text-muted-foreground">{t('scanner.platformFee')}</span>
                     {userStats && actualFeePercent < 5 && (
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r ${currentTier.color} text-white`}>
                         <Crown className="w-3 h-3" />
@@ -360,20 +362,20 @@ const Scanner = ({
                   </div>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground">Taxa cobrada</span>
+                  <span className="text-muted-foreground">{t('scanner.feeCharged')}</span>
                   <span className="text-amber-500">-{platformFee.toFixed(4)} SOL</span>
                 </div>
                 {actualFeePercent < 5 && (
                   <div className="flex justify-between items-center mb-2 text-green-500">
-                    <span className="text-sm">💎 Desconto VIP</span>
+                    <span className="text-sm">💎 {t('scanner.vipDiscount')}</span>
                     <span className="text-sm font-medium">
-                      Economizando {((totalRecoverable * 0.05) - platformFee).toFixed(4)} SOL
+                      {t('scanner.saving')} {((totalRecoverable * 0.05) - platformFee).toFixed(4)} SOL
                     </span>
                   </div>
                 )}
                 <div className="border-t border-border pt-2 mt-2">
                   <div className="flex justify-between items-center">
-                    <span className="font-bold text-foreground">Você recebe</span>
+                    <span className="font-bold text-foreground">{t('scanner.youReceive')}</span>
                     <div className="text-right">
                       <span className="font-bold text-xl text-green-500 block">{netAmount.toFixed(4)} SOL</span>
                       {solPrice && (
@@ -394,24 +396,24 @@ const Scanner = ({
                 {(isProcessing || isSimulating) ? (
                   <>
                     <Loader2 className="w-6 h-6 animate-spin mr-2" />
-                    {isSimulating ? 'Simulando...' : 'Processando...'}
+                    {isSimulating ? t('scanner.simulating') : t('scanner.processing')}
                   </>
                 ) : (
                   <>
                     <Coins className="w-6 h-6 mr-2" />
-                    {simulationMode && !walletConnected ? '🧪 ' : ''}Recuperar {netAmount.toFixed(4)} SOL
+                    {simulationMode && !walletConnected ? '🧪 ' : ''}{t('scanner.recover')} {netAmount.toFixed(4)} SOL
                   </>
                 )}
               </Button>
 
               <p className="text-xs text-muted-foreground text-center mt-4">
-                Ao clicar, você confirmará a transação na sua wallet
+                {t('scanner.confirmTx')}
               </p>
 
               {/* Expandable account details */}
               <details className="mt-6">
                 <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground flex items-center gap-2">
-                  <span>Ver detalhes das {accounts.length} contas</span>
+                  <span>{t('scanner.viewDetails')} {accounts.length} {t('scanner.accounts')}</span>
                 </summary>
                 <div className="mt-4 space-y-2 max-h-60 overflow-y-auto">
                   {accounts.map((account) => (
@@ -439,60 +441,78 @@ const Scanner = ({
                 </div>
                 <div className="flex justify-between mt-3">
                   <Button variant="ghost" size="sm" onClick={handleSelectAll}>
-                    {accounts.every(acc => acc.selected) ? "Desmarcar Todas" : "Selecionar Todas"}
+                    {accounts.every(acc => acc.selected) ? t('scanner.deselectAll') : t('scanner.selectAll')}
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={handleScan} disabled={isScanning}>
-                    <RefreshCw className={`w-4 h-4 mr-1 ${isScanning ? 'animate-spin' : ''}`} />
-                    Re-escanear
+                  <Button variant="ghost" size="sm" onClick={simulationMode && !walletConnected ? simulateScan : handleScan}>
+                    <RefreshCw className="w-4 h-4 mr-1" />
+                    {t('scanner.rescan')}
                   </Button>
                 </div>
               </details>
             </div>
           )}
 
-          {/* Empty State / Success State */}
-          {scanComplete && accounts.length === 0 && (
-            <div className="max-w-2xl mx-auto text-center glass-strong rounded-2xl p-12 animate-fade-in-up">
-              <div className={`w-20 h-20 rounded-full ${recoveryComplete ? 'bg-gradient-to-br from-green-500 to-emerald-600' : 'bg-success/20'} flex items-center justify-center mx-auto mb-6`}>
-                {recoveryComplete ? (
-                  <Coins className="w-10 h-10 text-white" />
-                ) : (
+          {/* No accounts found state */}
+          {scanComplete && accounts.length === 0 && !recoveryComplete && (
+            <div className="max-w-2xl mx-auto">
+              <div className="glass-strong rounded-2xl p-8 text-center animate-fade-in-up">
+                <div className="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-6">
                   <CheckCircle2 className="w-10 h-10 text-success" />
-                )}
-              </div>
-              <h3 className="text-3xl font-bold text-foreground mb-2">
-                {recoveryComplete ? "🎉 SOL Recuperado!" : "Tudo Limpo!"}
-              </h3>
-              {recoveryComplete && recoveredAmount > 0 && (
-                <div className="mb-4">
-                  <p className="text-2xl font-bold text-green-500">{recoveredAmount.toFixed(4)} SOL</p>
-                  {solPrice && (
-                    <p className="text-lg text-green-400">{formatUSD(recoveredAmount)}</p>
-                  )}
                 </div>
-              )}
-              <p className="text-muted-foreground mb-6">
-                {recoveryComplete 
-                  ? "Todas as contas foram fechadas com sucesso e o SOL foi enviado para sua wallet!"
-                  : "Não encontramos contas vazias ou NFTs queimáveis na sua wallet."
-                }
-              </p>
-              {lastTxSignature && (
-                <a
-                  href={`https://solscan.io/tx/${lastTxSignature}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-primary hover:underline mb-6"
-                >
-                  Ver transação no Solscan
-                  <ExternalLink className="w-4 h-4" />
-                </a>
-              )}
-              <div className="mt-4">
-                <Button variant="glass" onClick={handleScan} disabled={isScanning}>
-                  <RefreshCw className={`w-4 h-4 ${isScanning ? 'animate-spin' : ''}`} />
-                  Escanear Novamente
+                <h3 className="text-2xl font-bold text-foreground mb-2">{t('scanner.allClean')}</h3>
+                <p className="text-muted-foreground mb-6">
+                  {t('scanner.noAccountsFound')}
+                </p>
+                <Button variant="outline" onClick={simulationMode && !walletConnected ? simulateScan : handleScan}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  {t('scanner.scanAgain')}
                 </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Success state */}
+          {recoveryComplete && (
+            <div className="max-w-2xl mx-auto">
+              <div className="glass-strong rounded-2xl p-8 text-center animate-fade-in-up">
+                <div className="w-24 h-24 rounded-full bg-gradient-primary flex items-center justify-center mx-auto mb-6 animate-bounce-slow">
+                  <CheckCircle2 className="w-12 h-12 text-primary-foreground" />
+                </div>
+                <h3 className="text-3xl font-bold text-foreground mb-2">
+                  {recoveredAmount.toFixed(4)} {t('scanner.solRecovered')}
+                </h3>
+                {solPrice && (
+                  <p className="text-xl text-green-500 font-semibold mb-4">
+                    {formatUSD(recoveredAmount)}
+                  </p>
+                )}
+                <p className="text-muted-foreground mb-6">
+                  {t('scanner.successMessage')}
+                </p>
+                {lastTxSignature && !lastTxSignature.startsWith('Sim') && (
+                  <a 
+                    href={`https://solscan.io/tx/${lastTxSignature}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-primary hover:underline mb-4"
+                  >
+                    {t('scanner.viewOnExplorer')}
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                )}
+                <div className="mt-4">
+                  <Button variant="outline" onClick={() => {
+                    setRecoveryComplete(false);
+                    if (simulationMode && !walletConnected) {
+                      simulateScan();
+                    } else {
+                      handleScan();
+                    }
+                  }}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    {t('scanner.scanAgain')}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

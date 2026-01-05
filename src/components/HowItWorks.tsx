@@ -1,42 +1,45 @@
 import { Wallet, Search, Flame, Coins } from "lucide-react";
-
-const steps = [
-  {
-    icon: Wallet,
-    title: "Conecte sua Wallet",
-    description: "Conecte sua wallet Solana (Phantom, Solflare, Backpack) de forma segura.",
-    color: "text-primary"
-  },
-  {
-    icon: Search,
-    title: "Escaneie suas Contas",
-    description: "Nosso scanner identifica automaticamente contas vazias, NFTs queimáveis e rent recuperável.",
-    color: "text-secondary"
-  },
-  {
-    icon: Flame,
-    title: "Selecione e Queime",
-    description: "Escolha as contas que deseja fechar. Você tem controle total sobre o que será processado.",
-    color: "text-warning"
-  },
-  {
-    icon: Coins,
-    title: "Recupere seu SOL",
-    description: "O SOL de rent é recuperado e enviado para sua wallet, menos a taxa da plataforma.",
-    color: "text-success"
-  }
-];
+import { useTranslation } from "@/hooks/useTranslation";
 
 const HowItWorks = () => {
+  const { t } = useTranslation();
+  
+  const steps = [
+    {
+      icon: Wallet,
+      titleKey: 'how.step1.title',
+      descKey: 'how.step1.desc',
+      color: "text-primary"
+    },
+    {
+      icon: Search,
+      titleKey: 'how.step2.title',
+      descKey: 'how.step2.desc',
+      color: "text-secondary"
+    },
+    {
+      icon: Flame,
+      titleKey: 'how.step3.title',
+      descKey: 'how.step3.desc',
+      color: "text-warning"
+    },
+    {
+      icon: Coins,
+      titleKey: 'how.step4.title',
+      descKey: 'how.step4.desc',
+      color: "text-success"
+    }
+  ];
+
   return (
     <section id="como-funciona" className="py-20 relative">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-            Como <span className="text-gradient">Funciona</span>
+            {t('how.title')}
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Recuperar SOL preso em rent nunca foi tão simples. Siga estes 4 passos.
+            {t('how.subtitle')}
           </p>
         </div>
 
@@ -65,8 +68,8 @@ const HowItWorks = () => {
                   </div>
 
                   {/* Content */}
-                  <h3 className="text-lg font-bold text-foreground mb-2">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-2">{t(step.titleKey)}</h3>
+                  <p className="text-sm text-muted-foreground">{t(step.descKey)}</p>
                 </div>
               </div>
             ))}
