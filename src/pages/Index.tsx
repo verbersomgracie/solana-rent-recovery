@@ -97,6 +97,27 @@ const Index = () => {
           walletConnected={isConnected}
         />
         
+        {/* Profile Section - Shows at top when wallet connected */}
+        {isConnected && (
+          <section id="profile" className="py-20">
+            <div className="container mx-auto px-4">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-foreground mb-2">{t('profile.title')}</h2>
+                <p className="text-muted-foreground">{t('profile.subtitle')}</p>
+              </div>
+              
+              <GamificationDashboard
+                userStats={userStats}
+                achievements={achievements}
+                leaderboard={leaderboard}
+                walletAddress={publicKey}
+                onApplyReferralCode={applyReferralCode}
+                isLoading={isGamificationLoading}
+              />
+            </div>
+          </section>
+        )}
+        
         {/* Chain Selector Section */}
         <section id="scanner" className="py-20">
           <div className="container mx-auto px-4">
@@ -140,24 +161,26 @@ const Index = () => {
         
         <VIPBanner />
         
-        {/* Gamification Section */}
-        <section id="profile" className="py-20">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">{t('profile.title')}</h2>
-              <p className="text-muted-foreground">{t('profile.subtitle')}</p>
+        {/* Profile Section - Shows at bottom when wallet NOT connected */}
+        {!isConnected && (
+          <section id="profile" className="py-20">
+            <div className="container mx-auto px-4">
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-foreground mb-2">{t('profile.title')}</h2>
+                <p className="text-muted-foreground">{t('profile.subtitle')}</p>
+              </div>
+              
+              <GamificationDashboard
+                userStats={userStats}
+                achievements={achievements}
+                leaderboard={leaderboard}
+                walletAddress={publicKey}
+                onApplyReferralCode={applyReferralCode}
+                isLoading={isGamificationLoading}
+              />
             </div>
-            
-            <GamificationDashboard
-              userStats={userStats}
-              achievements={achievements}
-              leaderboard={leaderboard}
-              walletAddress={publicKey}
-              onApplyReferralCode={applyReferralCode}
-              isLoading={isGamificationLoading}
-            />
-          </div>
-        </section>
+          </section>
+        )}
         
         <FeesSection />
         
