@@ -68,6 +68,7 @@ export type Database = {
       transactions: {
         Row: {
           accounts_closed: number
+          blockchain: string
           created_at: string
           fee_collected: number
           fee_percent: number
@@ -79,6 +80,7 @@ export type Database = {
         }
         Insert: {
           accounts_closed?: number
+          blockchain?: string
           created_at?: string
           fee_collected?: number
           fee_percent?: number
@@ -90,6 +92,7 @@ export type Database = {
         }
         Update: {
           accounts_closed?: number
+          blockchain?: string
           created_at?: string
           fee_collected?: number
           fee_percent?: number

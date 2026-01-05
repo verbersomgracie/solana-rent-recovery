@@ -29,6 +29,14 @@ interface Transaction {
   fee_percent: number;
   transaction_signature: string | null;
   created_at: string;
+  blockchain: string;
+}
+
+interface BlockchainStats {
+  transactions: number;
+  recovered: number;
+  fees: number;
+  accounts: number;
 }
 
 interface TransactionStats {
@@ -69,6 +77,8 @@ const Admin = () => {
     totalFeesCollected: 0,
     totalAccountsClosed: 0
   });
+  const [solanaStats, setSolanaStats] = useState<BlockchainStats>({ transactions: 0, recovered: 0, fees: 0, accounts: 0 });
+  const [nearStats, setNearStats] = useState<BlockchainStats>({ transactions: 0, recovered: 0, fees: 0, accounts: 0 });
 
   useEffect(() => {
     loadAdminData();
@@ -131,6 +141,24 @@ const Admin = () => {
         });
         
         setStats(totalStats);
+
+        // Calculate per-blockchain stats
+        const solana = transactionsData.filter(tx => tx.blockchain === 'solana' || !tx.blockchain);
+        const near = transactionsData.filter(tx => tx.blockchain === 'near');
+        
+        setSolanaStats({
+          transactions: solana.length,
+          recovered: solana.reduce((acc, tx) => acc + Number(tx.sol_recovered), 0),
+          fees: solana.reduce((acc, tx) => acc + Number(tx.fee_collected), 0),
+          accounts: solana.reduce((acc, tx) => acc + tx.accounts_closed, 0)
+        });
+        
+        setNearStats({
+          transactions: near.length,
+          recovered: near.reduce((acc, tx) => acc + Number(tx.sol_recovered), 0),
+          fees: near.reduce((acc, tx) => acc + Number(tx.fee_collected), 0),
+          accounts: near.reduce((acc, tx) => acc + tx.accounts_closed, 0)
+        });
 
         // Calculate per-wallet stats
         const walletMap = new Map<string, WalletStats>();
@@ -470,6 +498,101 @@ const Admin = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Blockchain Stats Comparison */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5" />
+              Estatísticas por Blockchain
+            </CardTitle>
+            <CardDescription>
+              Comparativo de recuperação entre Solana e NEAR
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Solana Stats */}
+              <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <span className="text-purple-500 font-bold text-sm">S</span>
+                  </div>
+                  <h3 className="font-semibold text-lg">Solana</h3>
+                  <Badge variant="outline" className="ml-auto border-purple-500/50 text-purple-500">
+                    {solanaStats.transactions} txs
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Recuperado</span>
+                    <span className="font-bold text-green-500">{formatSol(solanaStats.recovered)} SOL</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Taxas</span>
+                    <span className="font-bold text-amber-500">{formatSol(solanaStats.fees)} SOL</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Contas Fechadas</span>
+                    <span className="font-bold text-blue-500">{solanaStats.accounts}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* NEAR Stats */}
+              <div className="p-4 rounded-lg bg-gradient-to-br from-cyan-500/10 to-cyan-500/5 border border-cyan-500/20">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                    <span className="text-cyan-500 font-bold text-sm">N</span>
+                  </div>
+                  <h3 className="font-semibold text-lg">NEAR</h3>
+                  <Badge variant="outline" className="ml-auto border-cyan-500/50 text-cyan-500">
+                    {nearStats.transactions} txs
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Recuperado</span>
+                    <span className="font-bold text-green-500">{formatSol(nearStats.recovered)} NEAR</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Taxas</span>
+                    <span className="font-bold text-amber-500">{formatSol(nearStats.fees)} NEAR</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Contas Fechadas</span>
+                    <span className="font-bold text-blue-500">{nearStats.accounts}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Comparison Bar */}
+            <div className="mt-6 pt-4 border-t border-border">
+              <p className="text-sm text-muted-foreground mb-2">Distribuição de Transações</p>
+              <div className="h-4 rounded-full overflow-hidden bg-muted flex">
+                {stats.totalTransactions > 0 ? (
+                  <>
+                    <div 
+                      className="h-full bg-purple-500 transition-all duration-500"
+                      style={{ width: `${(solanaStats.transactions / stats.totalTransactions) * 100}%` }}
+                    />
+                    <div 
+                      className="h-full bg-cyan-500 transition-all duration-500"
+                      style={{ width: `${(nearStats.transactions / stats.totalTransactions) * 100}%` }}
+                    />
+                  </>
+                ) : (
+                  <div className="h-full w-full bg-muted" />
+                )}
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                <span>Solana: {stats.totalTransactions > 0 ? ((solanaStats.transactions / stats.totalTransactions) * 100).toFixed(1) : 0}%</span>
+                <span>NEAR: {stats.totalTransactions > 0 ? ((nearStats.transactions / stats.totalTransactions) * 100).toFixed(1) : 0}%</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Platform Fee Settings */}
