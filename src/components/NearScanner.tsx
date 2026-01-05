@@ -2,6 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { Search, Loader2, CheckCircle2, RefreshCw, Coins, DollarSign, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNear, NearScannedAccount } from "@/hooks/useNear";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import confetti from "canvas-confetti";
 
 interface NearScannerProps {
@@ -215,8 +217,31 @@ const NearScanner = ({ simulationMode = false }: NearScannerProps) => {
       setLastTxHash(result.txHash || null);
       setAccounts(prev => prev.filter(acc => !acc.selected || !acc.isRecoverable));
       triggerConfetti();
+      
+      // Log transaction to database
+      try {
+        const { error } = await supabase.from('transactions').insert({
+          wallet_address: accountId || '',
+          blockchain: 'near',
+          sol_recovered: netAmount,
+          accounts_closed: selectedAccounts.length,
+          fee_percent: platformFeePercent,
+          fee_collected: platformFee,
+          transaction_signature: result.txHash || null,
+        });
+        
+        if (error) {
+          console.error('Failed to log NEAR transaction:', error);
+        } else {
+          console.log('NEAR transaction logged successfully');
+        }
+      } catch (logError) {
+        console.error('Error logging NEAR transaction:', logError);
+      }
+    } else {
+      toast.error(result.error || 'Falha ao recuperar storage');
     }
-  }, [selectedAccounts, executeStorageRecovery, netAmount]);
+  }, [selectedAccounts, executeStorageRecovery, netAmount, accountId, platformFeePercent, platformFee]);
 
   // Simulate recovery
   const simulateRecover = useCallback(async () => {
