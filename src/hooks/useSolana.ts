@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { 
   Connection, 
@@ -7,10 +7,15 @@ import {
   TransactionInstruction,
   SystemProgram
 } from '@solana/web3.js';
+import { WalletConnectWalletAdapter } from '@solana/wallet-adapter-walletconnect';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { supabase } from '@/integrations/supabase/client';
 
-// Token Program ID
-const TOKEN_PROGRAM_ID = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+// WalletConnect Project ID
+const WALLETCONNECT_PROJECT_ID = 'dac06fba7358042191ac31b82ee8a3e5';
+
+// RPC Endpoint
+const RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 
 interface PhantomProvider {
   isPhantom: boolean;
@@ -82,6 +87,9 @@ export function useSolana() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Store WalletConnect adapter instance
+  const walletConnectRef = useRef<WalletConnectWalletAdapter | null>(null);
 
   const getProvider = useCallback((wallet: string) => {
     switch (wallet.toLowerCase()) {
@@ -96,9 +104,48 @@ export function useSolana() {
     }
   }, []);
 
+  const createWalletConnectAdapter = useCallback(() => {
+    return new WalletConnectWalletAdapter({
+      network: WalletAdapterNetwork.Mainnet,
+      options: {
+        relayUrl: 'wss://relay.walletconnect.com',
+        projectId: WALLETCONNECT_PROJECT_ID,
+        metadata: {
+          name: 'SOL Reclaim',
+          description: 'Recupere SOL de contas token vazias',
+          url: window.location.origin,
+          icons: [`${window.location.origin}/favicon.ico`]
+        }
+      }
+    });
+  }, []);
+
   const connect = useCallback(async (wallet: string): Promise<boolean> => {
     setIsConnecting(true);
     try {
+      // Handle WalletConnect separately
+      if (wallet.toLowerCase() === 'walletconnect') {
+        const adapter = createWalletConnectAdapter();
+        walletConnectRef.current = adapter;
+        
+        await adapter.connect();
+        
+        if (adapter.publicKey) {
+          const pubKey = adapter.publicKey.toString();
+          setPublicKey(pubKey);
+          setIsConnected(true);
+          setWalletName('WalletConnect');
+          
+          toast.success('Wallet conectada via WalletConnect!', {
+            description: `${pubKey.slice(0, 8)}...${pubKey.slice(-8)}`
+          });
+          
+          return true;
+        }
+        return false;
+      }
+
+      // Handle other wallets (Phantom, Solflare, Backpack)
       const provider = getProvider(wallet);
       
       if (!provider) {
@@ -129,10 +176,18 @@ export function useSolana() {
     } finally {
       setIsConnecting(false);
     }
-  }, [getProvider]);
+  }, [getProvider, createWalletConnectAdapter]);
 
   const disconnect = useCallback(async () => {
-    if (walletName) {
+    // Handle WalletConnect disconnect
+    if (walletName === 'WalletConnect' && walletConnectRef.current) {
+      try {
+        await walletConnectRef.current.disconnect();
+        walletConnectRef.current = null;
+      } catch (error) {
+        console.error('WalletConnect disconnect error:', error);
+      }
+    } else if (walletName) {
       const provider = getProvider(walletName);
       if (provider) {
         try {
@@ -276,14 +331,24 @@ export function useSolana() {
       }
 
       // Get provider and sign/send transaction
-      const provider = getProvider(walletName);
-      if (!provider) {
-        throw new Error('Wallet provider not found');
-      }
-
       toast.info('Confirme a transação na sua wallet...');
       
-      const result = await provider.signAndSendTransaction(transaction);
+      let signature: string;
+      
+      // Handle WalletConnect separately
+      if (walletName === 'WalletConnect' && walletConnectRef.current) {
+        const signedTx = await walletConnectRef.current.signTransaction(transaction);
+        const connection = new Connection(RPC_ENDPOINT);
+        signature = await connection.sendRawTransaction(signedTx.serialize());
+        await connection.confirmTransaction(signature);
+      } else {
+        const provider = getProvider(walletName);
+        if (!provider) {
+          throw new Error('Wallet provider not found');
+        }
+        const result = await provider.signAndSendTransaction(transaction);
+        signature = result.signature;
+      }
       
       // Log transaction to database
       await logTransaction(
@@ -292,7 +357,7 @@ export function useSolana() {
         summary.totalRentSol,
         summary.platformFeeSol,
         summary.platformFeePercent || 5,
-        result.signature
+        signature
       );
       
       toast.success('SOL recuperado com sucesso!', {
@@ -301,7 +366,7 @@ export function useSolana() {
 
       return { 
         success: true, 
-        signature: result.signature 
+        signature 
       };
     } catch (error: any) {
       console.error('Close accounts error:', error);
