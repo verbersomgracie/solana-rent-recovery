@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { setupWalletSelector, WalletSelector } from "@near-wallet-selector/core";
 import { setupModal, WalletSelectorModal } from "@near-wallet-selector/modal-ui";
 import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
-import { setupMeteorWallet } from "@near-wallet-selector/meteor-wallet";
 import { providers, utils } from "near-api-js";
 import "@near-wallet-selector/modal-ui/styles.css";
 
@@ -83,7 +82,6 @@ export const useNear = () => {
         network: NEAR_NETWORK as "testnet" | "mainnet",
         modules: [
           setupMyNearWallet(),
-          setupMeteorWallet(),
         ],
       });
 
