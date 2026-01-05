@@ -4,6 +4,7 @@ import { setupModal, WalletSelectorModal } from "@near-wallet-selector/modal-ui"
 import { setupMyNearWallet } from "@near-wallet-selector/my-near-wallet";
 import { setupMeteorWallet } from "@near-wallet-selector/meteor-wallet";
 import { providers, utils } from "near-api-js";
+import "@near-wallet-selector/modal-ui/styles.css";
 
 // NEP-141 FT Interface
 interface FTContract {
