@@ -20,7 +20,7 @@ const RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
 interface PhantomProvider {
   isPhantom: boolean;
   publicKey: PublicKey | null;
-  connect: () => Promise<{ publicKey: PublicKey }>;
+  connect: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: PublicKey }>;
   disconnect: () => Promise<void>;
   signTransaction: (transaction: Transaction) => Promise<Transaction>;
   signAndSendTransaction: (transaction: Transaction) => Promise<{ signature: string }>;
@@ -29,7 +29,7 @@ interface PhantomProvider {
 interface SolflareProvider {
   isSolflare: boolean;
   publicKey: PublicKey | null;
-  connect: () => Promise<{ publicKey: PublicKey }>;
+  connect: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: PublicKey }>;
   disconnect: () => Promise<void>;
   signTransaction: (transaction: Transaction) => Promise<Transaction>;
   signAndSendTransaction: (transaction: Transaction) => Promise<{ signature: string }>;
@@ -38,7 +38,7 @@ interface SolflareProvider {
 interface BackpackProvider {
   isBackpack: boolean;
   publicKey: PublicKey | null;
-  connect: () => Promise<{ publicKey: PublicKey }>;
+  connect: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: PublicKey }>;
   disconnect: () => Promise<void>;
   signTransaction: (transaction: Transaction) => Promise<Transaction>;
   signAndSendTransaction: (transaction: Transaction) => Promise<{ signature: string }>;
@@ -155,7 +155,9 @@ export function useSolana() {
         return false;
       }
 
-      const response = await provider.connect();
+      // Force the wallet to always ask for permission by using onlyIfTrusted: false
+      // This ensures the user always sees the authorization popup
+      const response = await provider.connect({ onlyIfTrusted: false });
       const pubKey = response.publicKey.toString();
       
       setPublicKey(pubKey);
