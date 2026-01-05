@@ -82,6 +82,13 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.vip': 'VIP',
     'profile.streak': 'Streak',
     
+    // Progress (Sidebar)
+    'progress.level': 'Level',
+    'progress.stats': 'Statistics',
+    'progress.transactions': 'Transactions',
+    'progress.achievements': 'Achievements',
+    'progress.leaderboard': 'Leaderboard',
+    
     // VIP
     'vip.yourLevel': 'Your VIP level',
     'vip.fee': 'fee',
@@ -283,6 +290,13 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.leaderboard': 'Ranking',
     'profile.vip': 'VIP',
     'profile.streak': 'Streak',
+    
+    // Meu Progresso (Sidebar)
+    'progress.level': 'Nível',
+    'progress.stats': 'Estatísticas',
+    'progress.transactions': 'Transações',
+    'progress.achievements': 'Conquistas',
+    'progress.leaderboard': 'Ranking',
     
     // VIP
     'vip.yourLevel': 'Seu nível VIP',
@@ -486,6 +500,13 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.vip': 'VIP',
     'profile.streak': 'Racha',
     
+    // Mi Progreso (Sidebar)
+    'progress.level': 'Nivel',
+    'progress.stats': 'Estadísticas',
+    'progress.transactions': 'Transacciones',
+    'progress.achievements': 'Logros',
+    'progress.leaderboard': 'Ranking',
+    
     // VIP
     'vip.yourLevel': 'Tu nivel VIP',
     'vip.fee': 'tarifa',
@@ -687,6 +708,13 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.leaderboard': 'Classement',
     'profile.vip': 'VIP',
     'profile.streak': 'Série',
+    
+    // Ma Progression (Sidebar)
+    'progress.level': 'Niveau',
+    'progress.stats': 'Statistiques',
+    'progress.transactions': 'Transactions',
+    'progress.achievements': 'Succès',
+    'progress.leaderboard': 'Classement',
     
     // VIP
     'vip.yourLevel': 'Votre niveau VIP',
@@ -890,6 +918,13 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.vip': 'VIP',
     'profile.streak': 'Serie',
     
+    // Mein Fortschritt (Sidebar)
+    'progress.level': 'Stufe',
+    'progress.stats': 'Statistiken',
+    'progress.transactions': 'Transaktionen',
+    'progress.achievements': 'Erfolge',
+    'progress.leaderboard': 'Rangliste',
+    
     // VIP
     'vip.yourLevel': 'Ihr VIP-Level',
     'vip.fee': 'Gebühr',
@@ -1091,6 +1126,13 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.leaderboard': '排行榜',
     'profile.vip': 'VIP',
     'profile.streak': '连续',
+    
+    // 我的进度 (Sidebar)
+    'progress.level': '等级',
+    'progress.stats': '统计',
+    'progress.transactions': '交易',
+    'progress.achievements': '成就',
+    'progress.leaderboard': '排行榜',
     
     // VIP
     'vip.yourLevel': '您的VIP等级',

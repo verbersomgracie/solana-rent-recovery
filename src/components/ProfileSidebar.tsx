@@ -74,8 +74,8 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
 
   const menuItems = [
     { id: "scanner", icon: Home, label: t('nav.scanner') || "Scanner" },
-    { id: "achievements", icon: Medal, label: t('gamification.achievements') || "Achievements" },
-    { id: "leaderboard", icon: Trophy, label: t('gamification.leaderboard') || "Leaderboard" },
+    { id: "achievements", icon: Medal, label: t('progress.achievements') },
+    { id: "leaderboard", icon: Trophy, label: t('progress.leaderboard') },
   ];
 
   return (
@@ -157,7 +157,7 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-warning" />
                       <span className="text-sm font-semibold text-foreground">
-                        {t('gamification.level')} {userStats?.current_level || 1}
+                        {t('progress.level')} {userStats?.current_level || 1}
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground">
@@ -198,7 +198,7 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
         {!isCollapsed && userStats && (
           <>
             <SidebarGroup>
-              <SidebarGroupLabel>{t('gamification.stats') || "Stats"}</SidebarGroupLabel>
+              <SidebarGroupLabel>{t('progress.stats')}</SidebarGroupLabel>
               <SidebarGroupContent>
                 <div className="grid grid-cols-2 gap-2 px-1">
                   <div className="p-3 rounded-lg bg-muted/20 border border-border/30 text-center">
@@ -221,7 +221,7 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
                 <div className="mt-2 px-1">
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/30">
                     <Zap className="w-4 h-4 text-warning" />
-                    <span className="text-sm text-muted-foreground">{t('gamification.transactions') || "Transactions"}</span>
+                    <span className="text-sm text-muted-foreground">{t('progress.transactions')}</span>
                     <span className="text-sm font-bold text-foreground ml-auto">{userStats.total_transactions}</span>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
 
             {/* Referral Section */}
             <SidebarGroup>
-              <SidebarGroupLabel>{t('gamification.referrals') || "Referrals"}</SidebarGroupLabel>
+              <SidebarGroupLabel>{t('referral.title')}</SidebarGroupLabel>
               <SidebarGroupContent>
                 <div className="px-1 space-y-2">
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/30">
@@ -308,7 +308,7 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
                   </TooltipTrigger>
                   <TooltipContent side="right">
                     <p className="font-bold">{userStats.referral_count}</p>
-                    <p className="text-xs text-muted-foreground">{t('gamification.referrals') || "Referrals"}</p>
+                    <p className="text-xs text-muted-foreground">{t('referral.invited')}</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
