@@ -119,26 +119,7 @@ const Index = () => {
             </header>
             
             <main className="flex-1 overflow-auto">
-              {/* Profile Section */}
-              <section id="profile" className="py-12">
-                <div className="container mx-auto px-4">
-                  <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-foreground mb-2">{t('profile.title')}</h2>
-                    <p className="text-muted-foreground">{t('profile.subtitle')}</p>
-                  </div>
-                  
-                  <GamificationDashboard
-                    userStats={userStats}
-                    achievements={achievements}
-                    leaderboard={leaderboard}
-                    walletAddress={publicKey}
-                    onApplyReferralCode={applyReferralCode}
-                    isLoading={isGamificationLoading}
-                  />
-                </div>
-              </section>
-              
-              {/* Chain Selector Section */}
+              {/* Scanner Section - First */}
               <section id="scanner" className="py-12">
                 <div className="container mx-auto px-4">
                   <div className="text-center mb-8">

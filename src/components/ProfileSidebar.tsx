@@ -1,9 +1,11 @@
-import { Flame, Wallet, Trophy, Star, Users, Gift, TrendingUp, LogOut, Home, BarChart3, Medal, Crown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { Flame, Wallet, Trophy, Star, Users, Gift, TrendingUp, LogOut, Home, Medal, Crown, ChevronLeft, ChevronRight, Copy, Check, Zap } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
-import { getVIPTier, VIPTier } from "@/hooks/useVIPTier";
+import { getVIPTier, getNextVIPTier, VIPTier } from "@/hooks/useVIPTier";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "@/hooks/use-toast";
 import {
   Sidebar,
   SidebarContent,
@@ -41,6 +43,7 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
   const { t } = useTranslation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const [copied, setCopied] = useState(false);
   
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -50,14 +53,29 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
     ? getVIPTier(userStats.current_level, userStats.total_sol_recovered)
     : null;
 
+  const nextTier: VIPTier | null = userStats 
+    ? getNextVIPTier(userStats.current_level, userStats.total_sol_recovered)
+    : null;
+
   const xpForNextLevel = userStats ? (userStats.current_level + 1) * 100 : 100;
   const xpProgress = userStats ? (userStats.current_xp / xpForNextLevel) * 100 : 0;
 
+  const handleCopyReferralCode = () => {
+    if (userStats?.referral_code) {
+      navigator.clipboard.writeText(userStats.referral_code);
+      setCopied(true);
+      toast({
+        title: t('referral.copied') || "Copied!",
+        description: userStats.referral_code,
+      });
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const menuItems = [
     { id: "scanner", icon: Home, label: t('nav.scanner') || "Scanner" },
-    { id: "profile", icon: BarChart3, label: t('profile.title') },
-    { id: "achievements", icon: Medal, label: t('gamification.achievements') },
-    { id: "leaderboard", icon: Trophy, label: t('gamification.leaderboard') },
+    { id: "achievements", icon: Medal, label: t('gamification.achievements') || "Achievements" },
+    { id: "leaderboard", icon: Trophy, label: t('gamification.leaderboard') || "Leaderboard" },
   ];
 
   return (
@@ -113,7 +131,7 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
                 </TooltipTrigger>
                 <TooltipContent side="right">
                   <p className="font-mono text-xs">{walletAddress ? formatAddress(walletAddress) : "---"}</p>
-                  <p className="text-xs text-muted-foreground">Level {userStats?.current_level || 1}</p>
+                  <p className="text-xs text-muted-foreground">Level {userStats?.current_level || 1} • {vipTier?.name}</p>
                 </TooltipContent>
               </Tooltip>
             ) : (
@@ -151,20 +169,22 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
 
                 {/* VIP Tier */}
                 {vipTier && (
-                  <div 
-                    className="flex items-center gap-2 p-2 rounded-lg border"
-                    style={{ 
-                      backgroundColor: `hsl(var(--muted) / 0.3)`,
-                      borderColor: `hsl(var(--border))`
-                    }}
-                  >
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50 mb-2">
                     <Crown className="w-4 h-4 text-warning" />
                     <span className="text-sm font-medium text-foreground">
                       {vipTier.name}
                     </span>
                     <span className="text-xs text-muted-foreground ml-auto">
-                      {vipTier.fee}%
+                      {vipTier.fee}% {t('vip.fee')}
                     </span>
+                  </div>
+                )}
+
+                {/* Next tier progress */}
+                {nextTier && (
+                  <div className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Zap className="w-3 h-3 text-primary" />
+                    <span>{t('vip.next')}: {nextTier.name} ({nextTier.fee}%)</span>
                   </div>
                 )}
               </div>
@@ -193,16 +213,56 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
                     <p className="text-lg font-bold text-foreground">
                       {userStats.total_accounts_closed}
                     </p>
-                    <p className="text-xs text-muted-foreground">{t('stats.accountsClosed')}</p>
+                    <p className="text-xs text-muted-foreground">{t('stats.accountsClosed') || "Accounts"}</p>
                   </div>
                 </div>
                 
+                {/* Transactions */}
                 <div className="mt-2 px-1">
                   <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/30">
+                    <Zap className="w-4 h-4 text-warning" />
+                    <span className="text-sm text-muted-foreground">{t('gamification.transactions') || "Transactions"}</span>
+                    <span className="text-sm font-bold text-foreground ml-auto">{userStats.total_transactions}</span>
+                  </div>
+                </div>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarSeparator />
+
+            {/* Referral Section */}
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('gamification.referrals') || "Referrals"}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <div className="px-1 space-y-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/20 border border-border/30">
                     <Users className="w-4 h-4 text-accent" />
-                    <span className="text-sm text-muted-foreground">{t('gamification.referrals')}</span>
+                    <span className="text-sm text-muted-foreground">{t('referral.invited') || "Invited"}</span>
                     <span className="text-sm font-bold text-foreground ml-auto">{userStats.referral_count}</span>
                   </div>
+                  
+                  {userStats.referral_code && (
+                    <div className="p-2 rounded-lg bg-primary/10 border border-primary/30">
+                      <p className="text-xs text-muted-foreground mb-1">{t('referral.yourCode') || "Your code"}</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 text-sm font-mono text-primary truncate">
+                          {userStats.referral_code}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 shrink-0"
+                          onClick={handleCopyReferralCode}
+                        >
+                          {copied ? (
+                            <Check className="w-3 h-3 text-success" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -236,7 +296,19 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
                   </TooltipTrigger>
                   <TooltipContent side="right">
                     <p className="font-bold">{userStats.total_accounts_closed}</p>
-                    <p className="text-xs text-muted-foreground">{t('stats.accountsClosed')}</p>
+                    <p className="text-xs text-muted-foreground">{t('stats.accountsClosed') || "Accounts Closed"}</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-2 rounded-lg bg-muted/20 border border-border/30 cursor-pointer hover:bg-muted/40 transition-colors">
+                      <Users className="w-4 h-4 text-accent" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="font-bold">{userStats.referral_count}</p>
+                    <p className="text-xs text-muted-foreground">{t('gamification.referrals') || "Referrals"}</p>
                   </TooltipContent>
                 </Tooltip>
               </div>
