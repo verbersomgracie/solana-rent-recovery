@@ -18,6 +18,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.fees': 'Fees',
     'nav.faq': 'FAQ',
     'nav.profile': 'Profile',
+    'nav.scanner': 'Scanner',
+    'nav.navigation': 'Navigation',
+    'wallet.connected': 'Connected',
     
     // Wallet
     'wallet.connect': 'Connect Wallet',
@@ -217,6 +220,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.fees': 'Taxas',
     'nav.faq': 'FAQ',
     'nav.profile': 'Perfil',
+    'nav.scanner': 'Scanner',
+    'nav.navigation': 'Navegação',
+    'wallet.connected': 'Conectado',
     
     // Wallet
     'wallet.connect': 'Conectar Wallet',
@@ -416,6 +422,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.fees': 'Tarifas',
     'nav.faq': 'FAQ',
     'nav.profile': 'Perfil',
+    'nav.scanner': 'Escáner',
+    'nav.navigation': 'Navegación',
+    'wallet.connected': 'Conectado',
     
     // Wallet
     'wallet.connect': 'Conectar Wallet',
@@ -615,6 +624,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.fees': 'Frais',
     'nav.faq': 'FAQ',
     'nav.profile': 'Profil',
+    'nav.scanner': 'Scanner',
+    'nav.navigation': 'Navigation',
+    'wallet.connected': 'Connecté',
     
     // Wallet
     'wallet.connect': 'Connecter Wallet',
@@ -814,6 +826,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.fees': 'Gebühren',
     'nav.faq': 'FAQ',
     'nav.profile': 'Profil',
+    'nav.scanner': 'Scanner',
+    'nav.navigation': 'Navigation',
+    'wallet.connected': 'Verbunden',
     
     // Wallet
     'wallet.connect': 'Wallet verbinden',
@@ -1013,6 +1028,9 @@ const translations: Record<Language, Record<string, string>> = {
     'nav.fees': '费用',
     'nav.faq': '常见问题',
     'nav.profile': '个人资料',
+    'nav.scanner': '扫描器',
+    'nav.navigation': '导航',
+    'wallet.connected': '已连接',
     
     // Wallet
     'wallet.connect': '连接钱包',
