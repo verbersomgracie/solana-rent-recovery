@@ -232,51 +232,45 @@ const Scanner = ({
 
   if (!walletConnected && !scanComplete) {
     return (
-      <section id="scanner" className="py-20">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center glass-strong rounded-2xl p-12">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
-              <Search className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h2 className="text-2xl font-bold text-foreground mb-4">Conecte sua Wallet</h2>
-            <p className="text-muted-foreground mb-6">
-              Conecte sua wallet Solana para escanear suas contas e recuperar SOL preso em rent.
-            </p>
-            
-            {/* Simulation Mode */}
-            {simulationMode && (
-              <div className="mt-6 pt-6 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-3">Ou teste o sistema:</p>
-                <Button 
-                  variant="outline" 
-                  onClick={simulateScan}
-                  disabled={isSimulating}
-                  className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
-                >
-                  {isSimulating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Simulando...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 mr-2" />
-                      🧪 Simular Escaneamento
-                    </>
-                  )}
-                </Button>
-              </div>
-            )}
-          </div>
+      <div className="max-w-2xl mx-auto text-center glass-strong rounded-2xl p-12">
+        <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-6">
+          <Search className="w-8 h-8 text-muted-foreground" />
         </div>
-      </section>
+        <h2 className="text-2xl font-bold text-foreground mb-4">Conecte sua Wallet</h2>
+        <p className="text-muted-foreground mb-6">
+          Conecte sua wallet Solana para escanear suas contas e recuperar SOL preso em rent.
+        </p>
+        
+        {/* Simulation Mode */}
+        {simulationMode && (
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-sm text-muted-foreground mb-3">Ou teste o sistema:</p>
+            <Button 
+              variant="outline" 
+              onClick={simulateScan}
+              disabled={isSimulating}
+              className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+            >
+              {isSimulating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Simulando...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4 mr-2" />
+                  🧪 Simular Escaneamento
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
     );
   }
 
   return (
-    <section id="scanner" className="py-20">
-      <div className="container mx-auto px-4">
-        <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto">
           {/* Simulation Mode Banner */}
           {simulationMode && !walletConnected && scanComplete && (
             <div className="mb-4 p-3 bg-amber-500/20 border border-amber-500/30 rounded-lg text-center">
@@ -459,9 +453,7 @@ const Scanner = ({
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </section>
+    </div>
   );
 };
 
