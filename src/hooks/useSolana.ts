@@ -22,6 +22,7 @@ interface PhantomProvider {
   publicKey: PublicKey | null;
   connect: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: PublicKey }>;
   disconnect: () => Promise<void>;
+  signMessage?: (message: Uint8Array, display?: 'utf8' | 'hex') => Promise<any>;
   signTransaction: (transaction: Transaction) => Promise<Transaction>;
   signAndSendTransaction: (transaction: Transaction) => Promise<{ signature: string }>;
 }
@@ -31,6 +32,7 @@ interface SolflareProvider {
   publicKey: PublicKey | null;
   connect: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: PublicKey }>;
   disconnect: () => Promise<void>;
+  signMessage?: (message: Uint8Array, display?: 'utf8' | 'hex') => Promise<any>;
   signTransaction: (transaction: Transaction) => Promise<Transaction>;
   signAndSendTransaction: (transaction: Transaction) => Promise<{ signature: string }>;
 }
@@ -40,6 +42,7 @@ interface BackpackProvider {
   publicKey: PublicKey | null;
   connect: (options?: { onlyIfTrusted?: boolean }) => Promise<{ publicKey: PublicKey }>;
   disconnect: () => Promise<void>;
+  signMessage?: (message: Uint8Array, display?: 'utf8' | 'hex') => Promise<any>;
   signTransaction: (transaction: Transaction) => Promise<Transaction>;
   signAndSendTransaction: (transaction: Transaction) => Promise<{ signature: string }>;
 }
@@ -120,6 +123,39 @@ export function useSolana() {
     });
   }, []);
 
+  const requestWalletPermission = useCallback(async (wallet: string, provider: any, pubKey: string) => {
+    // If the wallet supports message signing, require a signature so the user always
+    // sees an explicit permission/approval prompt (even if the site was trusted before).
+    if (typeof provider?.signMessage !== 'function') return true;
+
+    const nonce =
+      (globalThis.crypto as any)?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const message = [
+      'SOL Reclaim - confirmação de acesso',
+      `Wallet: ${pubKey}`,
+      `Nonce: ${nonce}`,
+      `Domain: ${window.location.host}`,
+    ].join('\n');
+
+    try {
+      toast.info('Confirme a assinatura na sua wallet...');
+      const encoded = new TextEncoder().encode(message);
+      await provider.signMessage(encoded, 'utf8');
+      return true;
+    } catch (error: any) {
+      const msg = String(error?.message || '');
+      if (msg.toLowerCase().includes('reject')) {
+        toast.error('Assinatura cancelada pelo usuário');
+      } else {
+        toast.error('Não foi possível confirmar a wallet', {
+          description: msg || 'Tente novamente',
+        });
+      }
+      return false;
+    }
+  }, []);
+
   const connect = useCallback(async (wallet: string): Promise<boolean> => {
     setIsConnecting(true);
     try {
@@ -155,10 +191,29 @@ export function useSolana() {
         return false;
       }
 
-      // Force the wallet to always ask for permission by using onlyIfTrusted: false
-      // This ensures the user always sees the authorization popup
-      const response = await provider.connect({ onlyIfTrusted: false });
+      // Ensure we are not silently reusing a previous connection.
+      // Disconnecting first helps force the wallet to show its UI again.
+      if ((provider as any).publicKey) {
+        try {
+          await (provider as any).disconnect();
+        } catch {
+          // ignore
+        }
+      }
+
+      let response: any;
+      try {
+        response = await (provider as any).connect({ onlyIfTrusted: false });
+      } catch {
+        response = await (provider as any).connect();
+      }
+
       const pubKey = response.publicKey.toString();
+
+      const permitted = await requestWalletPermission(wallet, provider, pubKey);
+      if (!permitted) {
+        return false;
+      }
       
       setPublicKey(pubKey);
       setIsConnected(true);
@@ -178,7 +233,7 @@ export function useSolana() {
     } finally {
       setIsConnecting(false);
     }
-  }, [getProvider, createWalletConnectAdapter]);
+  }, [getProvider, createWalletConnectAdapter, requestWalletPermission]);
 
   const disconnect = useCallback(async () => {
     // Handle WalletConnect disconnect
