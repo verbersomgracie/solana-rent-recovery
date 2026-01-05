@@ -104,6 +104,30 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          call_count: number
+          function_name: string
+          id: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          call_count?: number
+          function_name: string
+          id?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          call_count?: number
+          function_name?: string
+          id?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       transactions: {
         Row: {
           accounts_closed: number
@@ -254,6 +278,14 @@ export type Database = {
       }
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          _function_name: string
+          _max_calls?: number
+          _window_seconds?: number
+        }
+        Returns: boolean
+      }
       generate_referral_code: { Args: never; Returns: string }
       has_role: {
         Args: {
