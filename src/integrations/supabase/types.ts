@@ -240,7 +240,18 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      leaderboard_view: {
+        Row: {
+          current_level: number | null
+          current_xp: number | null
+          id: string | null
+          masked_wallet: string | null
+          total_accounts_closed: number | null
+          total_sol_recovered: number | null
+          total_transactions: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       generate_referral_code: { Args: never; Returns: string }
