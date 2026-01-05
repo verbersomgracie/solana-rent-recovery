@@ -32,6 +32,9 @@ const Header = ({ walletConnected, walletAddress, onConnectWallet, onDisconnectW
           <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Como Funciona
           </a>
+          <a href="#profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            Perfil
+          </a>
           <a href="#taxas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             Taxas
           </a>

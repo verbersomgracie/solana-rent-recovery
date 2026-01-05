@@ -8,7 +8,10 @@ import FeesSection from "@/components/FeesSection";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 import WalletModal from "@/components/WalletModal";
+import GamificationDashboard from "@/components/gamification/GamificationDashboard";
+import AchievementUnlockModal from "@/components/gamification/AchievementUnlockModal";
 import { useSolana } from "@/hooks/useSolana";
+import { useGamification } from "@/hooks/useGamification";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
@@ -47,6 +50,17 @@ const Index = () => {
     scanAccounts,
     closeAccounts
   } = useSolana();
+
+  const {
+    userStats,
+    achievements,
+    leaderboard,
+    isLoading: isGamificationLoading,
+    newlyUnlocked,
+    updateStatsAfterTransaction,
+    applyReferralCode,
+    clearNewlyUnlocked
+  } = useGamification(publicKey);
 
   const handleConnectWallet = () => {
     setShowWalletModal(true);
@@ -102,6 +116,7 @@ const Index = () => {
                 isScanning={isScanning}
                 isProcessing={isProcessing}
                 simulationMode={simulationEnabled}
+                onTransactionComplete={updateStatsAfterTransaction}
               />
             ) : (
               <Suspense fallback={
@@ -117,6 +132,25 @@ const Index = () => {
         
         <HowItWorks />
         
+        {/* Gamification Section */}
+        <section id="profile" className="py-20">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-foreground mb-2">Seu Perfil</h2>
+              <p className="text-muted-foreground">Conquistas, estatísticas e ranking</p>
+            </div>
+            
+            <GamificationDashboard
+              userStats={userStats}
+              achievements={achievements}
+              leaderboard={leaderboard}
+              walletAddress={publicKey}
+              onApplyReferralCode={applyReferralCode}
+              isLoading={isGamificationLoading}
+            />
+          </div>
+        </section>
+        
         <FeesSection />
         
         <FAQ />
@@ -130,6 +164,14 @@ const Index = () => {
         onSelectWallet={handleSelectWallet}
         isConnecting={isConnecting}
       />
+
+      {/* Achievement unlock modal */}
+      {newlyUnlocked.length > 0 && (
+        <AchievementUnlockModal
+          achievements={newlyUnlocked}
+          onClose={clearNewlyUnlocked}
+        />
+      )}
     </div>
   );
 };
