@@ -1,6 +1,9 @@
 import { Shield, Zap, Lock, Eye } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const FeesSection = () => {
+  const { t } = useTranslation();
+  
   return (
     <section id="taxas" className="py-20 relative">
       {/* Background glow */}
@@ -12,10 +15,10 @@ const FeesSection = () => {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Taxas <span className="text-gradient">Transparentes</span>
+              {t('fees.title')}
             </h2>
             <p className="text-muted-foreground max-w-xl mx-auto">
-              Cobramos apenas uma pequena taxa sobre o SOL recuperado. Sem custos ocultos.
+              {t('fees.subtitle')}
             </p>
           </div>
 
@@ -23,30 +26,30 @@ const FeesSection = () => {
           <div className="glass-strong rounded-3xl p-8 sm:p-12 mb-12 text-center animate-scale-in">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <Zap className="w-4 h-4 text-primary" />
-              <span className="text-sm text-primary font-medium">Taxa da Plataforma</span>
+              <span className="text-sm text-primary font-medium">{t('fees.platformFee')}</span>
             </div>
             
             <div className="text-6xl sm:text-7xl font-bold text-gradient mb-4">5%</div>
             
             <p className="text-lg text-muted-foreground mb-8">
-              sobre cada SOL recuperado
+              {t('fees.perSolRecovered')}
             </p>
 
             <div className="grid sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
               <div className="p-4 rounded-xl bg-muted/30">
                 <div className="text-2xl font-bold text-foreground mb-1">0.1 SOL</div>
-                <div className="text-sm text-muted-foreground">Recuperado</div>
-                <div className="text-xs text-primary mt-2">Taxa: 0.005 SOL</div>
+                <div className="text-sm text-muted-foreground">{t('fees.recovered')}</div>
+                <div className="text-xs text-primary mt-2">{t('fees.fee')}: 0.005 SOL</div>
               </div>
               <div className="p-4 rounded-xl bg-muted/30">
                 <div className="text-2xl font-bold text-foreground mb-1">0.5 SOL</div>
-                <div className="text-sm text-muted-foreground">Recuperado</div>
-                <div className="text-xs text-primary mt-2">Taxa: 0.025 SOL</div>
+                <div className="text-sm text-muted-foreground">{t('fees.recovered')}</div>
+                <div className="text-xs text-primary mt-2">{t('fees.fee')}: 0.025 SOL</div>
               </div>
               <div className="p-4 rounded-xl bg-muted/30">
                 <div className="text-2xl font-bold text-foreground mb-1">1.0 SOL</div>
-                <div className="text-sm text-muted-foreground">Recuperado</div>
-                <div className="text-xs text-primary mt-2">Taxa: 0.05 SOL</div>
+                <div className="text-sm text-muted-foreground">{t('fees.recovered')}</div>
+                <div className="text-xs text-primary mt-2">{t('fees.fee')}: 0.05 SOL</div>
               </div>
             </div>
           </div>
@@ -57,9 +60,9 @@ const FeesSection = () => {
               <div className="w-12 h-12 rounded-xl bg-success/10 border border-success/20 flex items-center justify-center mx-auto mb-4">
                 <Shield className="w-6 h-6 text-success" />
               </div>
-              <h3 className="font-bold text-foreground mb-2">100% Seguro</h3>
+              <h3 className="font-bold text-foreground mb-2">{t('fees.secure')}</h3>
               <p className="text-sm text-muted-foreground">
-                Nunca solicitamos chaves privadas. Tudo é assinado pela sua wallet.
+                {t('fees.secureDesc')}
               </p>
             </div>
 
@@ -67,9 +70,9 @@ const FeesSection = () => {
               <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
                 <Eye className="w-6 h-6 text-primary" />
               </div>
-              <h3 className="font-bold text-foreground mb-2">Transparente</h3>
+              <h3 className="font-bold text-foreground mb-2">{t('fees.transparent')}</h3>
               <p className="text-sm text-muted-foreground">
-                Todas as transações são verificáveis na blockchain Solana.
+                {t('fees.transparentDesc')}
               </p>
             </div>
 
@@ -77,9 +80,9 @@ const FeesSection = () => {
               <div className="w-12 h-12 rounded-xl bg-secondary/10 border border-secondary/20 flex items-center justify-center mx-auto mb-4">
                 <Lock className="w-6 h-6 text-secondary" />
               </div>
-              <h3 className="font-bold text-foreground mb-2">Non-Custodial</h3>
+              <h3 className="font-bold text-foreground mb-2">{t('fees.nonCustodial')}</h3>
               <p className="text-sm text-muted-foreground">
-                Você mantém controle total dos seus fundos durante todo o processo.
+                {t('fees.nonCustodialDesc')}
               </p>
             </div>
           </div>

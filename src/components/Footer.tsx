@@ -1,6 +1,9 @@
 import { Flame, Github, Twitter } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const Footer = () => {
+  const { t } = useTranslation();
+  
   return (
     <footer className="py-12 border-t border-border/50">
       <div className="container mx-auto px-4">
@@ -13,20 +16,20 @@ const Footer = () => {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-gradient">SOL Reclaim</h3>
-                <p className="text-xs text-muted-foreground">Recupere seu SOL</p>
+                <p className="text-xs text-muted-foreground">{t('footer.tagline')}</p>
               </div>
             </div>
 
             {/* Links */}
             <div className="flex items-center gap-8">
               <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Como Funciona
+                {t('nav.howItWorks')}
               </a>
               <a href="#taxas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                Taxas
+                {t('nav.fees')}
               </a>
               <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                FAQ
+                {t('nav.faq')}
               </a>
             </div>
 
@@ -50,10 +53,10 @@ const Footer = () => {
           {/* Bottom */}
           <div className="mt-8 pt-8 border-t border-border/30 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">
-              © 2024 SOL Reclaim. Todos os direitos reservados.
+              © 2024 SOL Reclaim. {t('footer.rights')}
             </p>
             <p className="text-xs text-muted-foreground">
-              Construído na rede <span className="text-gradient font-medium">Solana</span>
+              {t('footer.builtOn')} <span className="text-gradient font-medium">Solana</span>
             </p>
           </div>
         </div>
