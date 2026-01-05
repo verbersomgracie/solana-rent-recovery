@@ -1,8 +1,9 @@
-import { Flame, Wallet, Trophy, Star, Users, Gift, TrendingUp, LogOut, Home, BarChart3, Medal, Crown } from "lucide-react";
+import { Flame, Wallet, Trophy, Star, Users, Gift, TrendingUp, LogOut, Home, BarChart3, Medal, Crown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getVIPTier, VIPTier } from "@/hooks/useVIPTier";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Sidebar,
   SidebarContent,
@@ -15,6 +16,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarSeparator,
+  SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -37,7 +39,7 @@ interface ProfileSidebarProps {
 
 const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: ProfileSidebarProps) => {
   const { t } = useTranslation();
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
   
   const formatAddress = (address: string) => {
@@ -59,21 +61,38 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
   ];
 
   return (
-    <Sidebar className="border-r border-border/50 bg-card/50 backdrop-blur-xl">
+    <Sidebar 
+      collapsible="icon"
+      className="border-r border-border/50 bg-card/50 backdrop-blur-xl"
+    >
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="relative">
+          <div className="relative shrink-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center animate-pulse-glow">
               <Flame className="w-5 h-5 text-primary-foreground" />
             </div>
           </div>
           {!isCollapsed && (
-            <div>
-              <h1 className="text-lg font-bold text-gradient">SOL Reclaim</h1>
-              <p className="text-xs text-muted-foreground">Recover your SOL</p>
+            <div className="overflow-hidden">
+              <h1 className="text-lg font-bold text-gradient truncate">SOL Reclaim</h1>
+              <p className="text-xs text-muted-foreground truncate">Recover your SOL</p>
             </div>
           )}
         </div>
+        
+        {/* Collapse toggle button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className={`absolute -right-3 top-6 z-50 h-6 w-6 rounded-full border border-border bg-card shadow-md hover:bg-muted ${isCollapsed ? 'hidden md:flex' : ''}`}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-3 w-3" />
+          ) : (
+            <ChevronLeft className="h-3 w-3" />
+          )}
+        </Button>
       </SidebarHeader>
 
       <SidebarSeparator />
@@ -83,71 +102,79 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
         <SidebarGroup>
           {!isCollapsed && <SidebarGroupLabel>{t('profile.title')}</SidebarGroupLabel>}
           <SidebarGroupContent>
-            <div className={`p-3 rounded-xl bg-muted/30 border border-border/50 ${isCollapsed ? 'flex justify-center' : ''}`}>
-              {isCollapsed ? (
-                <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center">
-                  <Wallet className="w-4 h-4 text-primary-foreground" />
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-center p-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center cursor-pointer hover:scale-110 transition-transform">
+                      <Wallet className="w-4 h-4 text-primary-foreground" />
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p className="font-mono text-xs">{walletAddress ? formatAddress(walletAddress) : "---"}</p>
+                  <p className="text-xs text-muted-foreground">Level {userStats?.current_level || 1}</p>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center shrink-0">
+                    <Wallet className="w-5 h-5 text-primary-foreground" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-mono text-foreground truncate">
+                      {walletAddress ? formatAddress(walletAddress) : "---"}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                      <span className="text-xs text-muted-foreground">{t('wallet.connected') || "Connected"}</span>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center">
-                      <Wallet className="w-5 h-5 text-primary-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-mono text-foreground truncate">
-                        {walletAddress ? formatAddress(walletAddress) : "---"}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                        <span className="text-xs text-muted-foreground">{t('wallet.connected') || "Connected"}</span>
-                      </div>
-                    </div>
-                  </div>
 
-                  {/* Level & XP */}
-                  <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-warning" />
-                        <span className="text-sm font-semibold text-foreground">
-                          {t('gamification.level')} {userStats?.current_level || 1}
-                        </span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {userStats?.current_xp || 0}/{xpForNextLevel} XP
+                {/* Level & XP */}
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-warning" />
+                      <span className="text-sm font-semibold text-foreground">
+                        {t('gamification.level')} {userStats?.current_level || 1}
                       </span>
                     </div>
-                    <Progress value={xpProgress} className="h-2" />
+                    <span className="text-xs text-muted-foreground">
+                      {userStats?.current_xp || 0}/{xpForNextLevel} XP
+                    </span>
                   </div>
+                  <Progress value={xpProgress} className="h-2" />
+                </div>
 
-                  {/* VIP Tier */}
-                  {vipTier && (
-                    <div 
-                      className="flex items-center gap-2 p-2 rounded-lg border"
-                      style={{ 
-                        backgroundColor: `${vipTier.color}15`,
-                        borderColor: `${vipTier.color}40`
-                      }}
-                    >
-                      <Crown className="w-4 h-4" style={{ color: vipTier.color }} />
-                      <span className="text-sm font-medium" style={{ color: vipTier.color }}>
-                        {vipTier.name}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-auto">
-                        {vipTier.fee}% {t('fees.title') || "Fee"}
-                      </span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                {/* VIP Tier */}
+                {vipTier && (
+                  <div 
+                    className="flex items-center gap-2 p-2 rounded-lg border"
+                    style={{ 
+                      backgroundColor: `hsl(var(--muted) / 0.3)`,
+                      borderColor: `hsl(var(--border))`
+                    }}
+                  >
+                    <Crown className="w-4 h-4 text-warning" />
+                    <span className="text-sm font-medium text-foreground">
+                      {vipTier.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-auto">
+                      {vipTier.fee}%
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </SidebarGroupContent>
         </SidebarGroup>
 
         <SidebarSeparator />
 
-        {/* Stats */}
+        {/* Stats - Only show when expanded */}
         {!isCollapsed && userStats && (
           <>
             <SidebarGroup>
@@ -184,6 +211,41 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
           </>
         )}
 
+        {/* Collapsed Stats Icons */}
+        {isCollapsed && userStats && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <div className="flex flex-col items-center gap-2 py-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-2 rounded-lg bg-muted/20 border border-border/30 cursor-pointer hover:bg-muted/40 transition-colors">
+                      <TrendingUp className="w-4 h-4 text-primary" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="font-bold">{userStats.total_sol_recovered.toFixed(4)} SOL</p>
+                    <p className="text-xs text-muted-foreground">Recovered</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="p-2 rounded-lg bg-muted/20 border border-border/30 cursor-pointer hover:bg-muted/40 transition-colors">
+                      <Gift className="w-4 h-4 text-secondary" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p className="font-bold">{userStats.total_accounts_closed}</p>
+                    <p className="text-xs text-muted-foreground">{t('stats.accountsClosed')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {isCollapsed && <SidebarSeparator />}
+
         {/* Navigation */}
         <SidebarGroup>
           {!isCollapsed && <SidebarGroupLabel>{t('nav.navigation') || "Navigation"}</SidebarGroupLabel>}
@@ -193,11 +255,11 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
                     onClick={() => onNavigate(item.id)}
-                    tooltip={isCollapsed ? item.label : undefined}
+                    tooltip={item.label}
                     className="hover:bg-primary/10"
                   >
                     <item.icon className="w-4 h-4" />
-                    {!isCollapsed && <span>{item.label}</span>}
+                    <span>{item.label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -206,17 +268,37 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={onDisconnect}
-          className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-        >
-          <LogOut className="w-4 h-4" />
-          {!isCollapsed && <span>{t('wallet.disconnect')}</span>}
-        </Button>
+      <SidebarFooter className={isCollapsed ? "p-2" : "p-4"}>
+        {isCollapsed ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={onDisconnect}
+                className="w-full text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              {t('wallet.disconnect')}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onDisconnect}
+            className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>{t('wallet.disconnect')}</span>
+          </Button>
+        )}
       </SidebarFooter>
+      
+      <SidebarRail />
     </Sidebar>
   );
 };
