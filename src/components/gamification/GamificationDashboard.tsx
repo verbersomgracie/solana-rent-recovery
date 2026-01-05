@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { 
   Trophy, Star, ChartBar, Users, Medal, 
-  ChevronRight, Zap, Target, Gift
+  Zap, Target, Gift, Crown, Flame, Sparkles
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,9 @@ import AchievementCard from "./AchievementCard";
 import Leaderboard from "./Leaderboard";
 import StatsChart from "./StatsChart";
 import ReferralCard from "./ReferralCard";
+import VIPTiers from "./VIPTiers";
+import StreakTracker from "./StreakTracker";
+import LuckyWheel from "./LuckyWheel";
 
 interface GamificationDashboardProps {
   userStats: UserStats | null;
@@ -33,6 +36,7 @@ const GamificationDashboard = ({
   className
 }: GamificationDashboardProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [showLuckyWheel, setShowLuckyWheel] = useState(false);
 
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const totalAchievements = achievements.length;
@@ -44,6 +48,11 @@ const GamificationDashboard = ({
     referrals: achievements.filter(a => a.requirement_type === 'referrals')
   };
 
+  const handlePrizeWon = (prize: any) => {
+    console.log('Prize won:', prize);
+    // TODO: Apply prize to user stats
+  };
+
   if (!walletAddress) {
     return (
       <div className={cn("glass rounded-2xl p-8 text-center border border-border/50", className)}>
@@ -51,9 +60,33 @@ const GamificationDashboard = ({
         <h3 className="text-xl font-bold text-foreground mb-2">
           Conecte sua Wallet
         </h3>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mb-6">
           Conecte sua wallet para ver seu progresso, conquistas e ranking!
         </p>
+        
+        {/* Preview features */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-left">
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
+            <Crown className="w-5 h-5 text-warning mb-2" />
+            <div className="text-sm font-medium text-foreground">Níveis VIP</div>
+            <div className="text-xs text-muted-foreground">Taxas a partir de 3%</div>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
+            <Trophy className="w-5 h-5 text-primary mb-2" />
+            <div className="text-sm font-medium text-foreground">Conquistas</div>
+            <div className="text-xs text-muted-foreground">14+ badges exclusivos</div>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
+            <Flame className="w-5 h-5 text-orange-500 mb-2" />
+            <div className="text-sm font-medium text-foreground">Streak Diária</div>
+            <div className="text-xs text-muted-foreground">Bônus progressivos</div>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/30">
+            <Sparkles className="w-5 h-5 text-secondary mb-2" />
+            <div className="text-sm font-medium text-foreground">Roda da Sorte</div>
+            <div className="text-xs text-muted-foreground">Prêmios extras</div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -66,6 +99,10 @@ const GamificationDashboard = ({
       </div>
     );
   }
+
+  // Calculate streak (mock - should come from database)
+  const currentStreak = Math.floor(userStats.total_transactions / 2);
+  const longestStreak = Math.max(currentStreak, 7);
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -89,49 +126,86 @@ const GamificationDashboard = ({
                 </span>
                 <span className="text-xs text-muted-foreground">
                   <Medal className="w-3 h-3 inline mr-1" />
-                  {unlockedCount}/{totalAchievements} conquistas
+                  {unlockedCount}/{totalAchievements}
+                </span>
+                <span className="text-xs text-orange-500">
+                  <Flame className="w-3 h-3 inline mr-1" />
+                  {currentStreak} dias
                 </span>
               </div>
             </div>
           </div>
           
-          <UserLevelBadge 
-            level={userStats.current_level} 
-            xp={userStats.current_xp}
-            showProgress
-            size="sm"
-            className="w-full sm:w-48"
-          />
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowLuckyWheel(true)}
+              className="border-secondary/50 text-secondary hover:bg-secondary/10"
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              Roda da Sorte
+            </Button>
+            <UserLevelBadge 
+              level={userStats.current_level} 
+              xp={userStats.current_xp}
+              showProgress
+              size="sm"
+              className="hidden sm:flex w-48"
+            />
+          </div>
         </div>
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 w-full glass">
-          <TabsTrigger value="overview" className="gap-2">
+        <TabsList className="grid grid-cols-5 w-full glass">
+          <TabsTrigger value="overview" className="gap-1.5">
             <ChartBar className="w-4 h-4" />
-            <span className="hidden sm:inline">Visão Geral</span>
+            <span className="hidden md:inline">Visão Geral</span>
           </TabsTrigger>
-          <TabsTrigger value="achievements" className="gap-2">
+          <TabsTrigger value="vip" className="gap-1.5">
+            <Crown className="w-4 h-4" />
+            <span className="hidden md:inline">VIP</span>
+          </TabsTrigger>
+          <TabsTrigger value="achievements" className="gap-1.5">
             <Trophy className="w-4 h-4" />
-            <span className="hidden sm:inline">Conquistas</span>
+            <span className="hidden md:inline">Conquistas</span>
           </TabsTrigger>
-          <TabsTrigger value="leaderboard" className="gap-2">
+          <TabsTrigger value="leaderboard" className="gap-1.5">
             <Target className="w-4 h-4" />
-            <span className="hidden sm:inline">Ranking</span>
+            <span className="hidden md:inline">Ranking</span>
           </TabsTrigger>
-          <TabsTrigger value="referrals" className="gap-2">
+          <TabsTrigger value="referrals" className="gap-1.5">
             <Gift className="w-4 h-4" />
-            <span className="hidden sm:inline">Referências</span>
+            <span className="hidden md:inline">Referências</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <StatsChart
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <StatsChart
+                totalSolRecovered={Number(userStats.total_sol_recovered)}
+                totalAccountsClosed={userStats.total_accounts_closed}
+                totalTransactions={userStats.total_transactions}
+                level={userStats.current_level}
+              />
+            </div>
+            <div>
+              <StreakTracker
+                currentStreak={currentStreak}
+                longestStreak={longestStreak}
+                lastActiveDate={userStats.updated_at}
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="vip" className="mt-6">
+          <VIPTiers
+            currentLevel={userStats.current_level}
             totalSolRecovered={Number(userStats.total_sol_recovered)}
-            totalAccountsClosed={userStats.total_accounts_closed}
-            totalTransactions={userStats.total_transactions}
-            level={userStats.current_level}
           />
         </TabsContent>
 
@@ -206,6 +280,13 @@ const GamificationDashboard = ({
           />
         </TabsContent>
       </Tabs>
+
+      {/* Lucky Wheel Modal */}
+      <LuckyWheel
+        isOpen={showLuckyWheel}
+        onClose={() => setShowLuckyWheel(false)}
+        onPrizeWon={handlePrizeWon}
+      />
     </div>
   );
 };
