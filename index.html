@@ -22,9 +22,31 @@
   <body>
     <script>
       // Polyfill for Node.js globals required by NEAR wallet-selector
-      window.global = window;
-      window.process = window.process || { env: {} };
-      window.Buffer = window.Buffer || { isBuffer: () => false };
+      window.global = window.global || window;
+      window.process = window.process || { env: {}, version: '', nextTick: function(fn) { setTimeout(fn, 0); } };
+      if (typeof window.Buffer === 'undefined') {
+        window.Buffer = {
+          isBuffer: function() { return false; },
+          from: function(data, encoding) {
+            if (typeof data === 'string') {
+              return new TextEncoder().encode(data);
+            }
+            return new Uint8Array(data);
+          },
+          alloc: function(size) { return new Uint8Array(size); },
+          allocUnsafe: function(size) { return new Uint8Array(size); },
+          concat: function(list) {
+            const totalLength = list.reduce((acc, val) => acc + val.length, 0);
+            const result = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const arr of list) {
+              result.set(arr, offset);
+              offset += arr.length;
+            }
+            return result;
+          }
+        };
+      }
     </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
