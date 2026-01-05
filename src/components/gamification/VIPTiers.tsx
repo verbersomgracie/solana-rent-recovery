@@ -1,6 +1,6 @@
 import { Crown, Star, Zap, Flame, Diamond, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { VIP_TIERS, getVIPTierIndex, getNextVIPTier } from "@/hooks/useVIPTier";
 
 interface VIPTiersProps {
   currentLevel: number;
@@ -8,69 +8,18 @@ interface VIPTiersProps {
   className?: string;
 }
 
-const VIP_TIERS = [
-  {
-    name: "Bronze",
-    minLevel: 1,
-    minSol: 0,
-    fee: 5.0,
-    icon: Star,
-    color: "from-amber-700 to-amber-900",
-    benefits: ["Acesso básico", "Conquistas padrão"]
-  },
-  {
-    name: "Prata",
-    minLevel: 5,
-    minSol: 5,
-    fee: 4.5,
-    icon: Shield,
-    color: "from-gray-400 to-gray-600",
-    benefits: ["Taxa reduzida 4.5%", "Badge exclusivo", "Suporte prioritário"]
-  },
-  {
-    name: "Ouro",
-    minLevel: 10,
-    minSol: 25,
-    fee: 4.0,
-    icon: Crown,
-    color: "from-yellow-400 to-amber-600",
-    benefits: ["Taxa reduzida 4%", "XP +10%", "Acesso antecipado"]
-  },
-  {
-    name: "Platina",
-    minLevel: 20,
-    minSol: 100,
-    fee: 3.5,
-    icon: Flame,
-    color: "from-cyan-400 to-blue-600",
-    benefits: ["Taxa reduzida 3.5%", "XP +20%", "NFT exclusivo"]
-  },
-  {
-    name: "Diamante",
-    minLevel: 50,
-    minSol: 500,
-    fee: 3.0,
-    icon: Diamond,
-    color: "from-purple-400 to-pink-600",
-    benefits: ["Taxa mínima 3%", "XP +30%", "Acesso VIP", "Sorteios especiais"]
-  }
-];
+const ICONS = {
+  Star,
+  Shield,
+  Crown,
+  Flame,
+  Diamond
+};
 
 const VIPTiers = ({ currentLevel, totalSolRecovered, className }: VIPTiersProps) => {
-  // Determine current tier
-  const getCurrentTier = () => {
-    for (let i = VIP_TIERS.length - 1; i >= 0; i--) {
-      const tier = VIP_TIERS[i];
-      if (currentLevel >= tier.minLevel && totalSolRecovered >= tier.minSol) {
-        return i;
-      }
-    }
-    return 0;
-  };
-
-  const currentTierIndex = getCurrentTier();
+  const currentTierIndex = getVIPTierIndex(currentLevel, totalSolRecovered);
   const currentTier = VIP_TIERS[currentTierIndex];
-  const nextTier = VIP_TIERS[currentTierIndex + 1];
+  const nextTier = getNextVIPTier(currentLevel, totalSolRecovered);
 
   const getProgressToNextTier = () => {
     if (!nextTier) return 100;
@@ -80,6 +29,8 @@ const VIPTiers = ({ currentLevel, totalSolRecovered, className }: VIPTiersProps)
     
     return Math.min(levelProgress, solProgress);
   };
+
+  const CurrentIcon = ICONS[currentTier.icon as keyof typeof ICONS] || Star;
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -97,7 +48,7 @@ const VIPTiers = ({ currentLevel, totalSolRecovered, className }: VIPTiersProps)
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <currentTier.icon className="w-8 h-8 text-white" />
+                <CurrentIcon className="w-8 h-8 text-white" />
               </div>
               <div>
                 <div className="text-sm text-white/70">Seu nível VIP</div>
@@ -146,7 +97,7 @@ const VIPTiers = ({ currentLevel, totalSolRecovered, className }: VIPTiersProps)
       <div className="grid gap-3">
         <h4 className="text-sm font-medium text-muted-foreground">Todos os níveis VIP</h4>
         {VIP_TIERS.map((tier, index) => {
-          const Icon = tier.icon;
+          const TierIcon = ICONS[tier.icon as keyof typeof ICONS] || Star;
           const isUnlocked = index <= currentTierIndex;
           const isCurrent = index === currentTierIndex;
           
@@ -164,7 +115,7 @@ const VIPTiers = ({ currentLevel, totalSolRecovered, className }: VIPTiersProps)
                 "w-10 h-10 rounded-lg flex items-center justify-center",
                 isUnlocked ? `bg-gradient-to-br ${tier.color}` : "bg-muted"
               )}>
-                <Icon className={cn(
+                <TierIcon className={cn(
                   "w-5 h-5",
                   isUnlocked ? "text-white" : "text-muted-foreground"
                 )} />

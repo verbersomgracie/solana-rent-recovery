@@ -12,6 +12,7 @@ import GamificationDashboard from "@/components/gamification/GamificationDashboa
 import AchievementUnlockModal from "@/components/gamification/AchievementUnlockModal";
 import { useSolana } from "@/hooks/useSolana";
 import { useGamification } from "@/hooks/useGamification";
+import { getVIPFee } from "@/hooks/useVIPTier";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
@@ -117,6 +118,8 @@ const Index = () => {
                 isProcessing={isProcessing}
                 simulationMode={simulationEnabled}
                 onTransactionComplete={updateStatsAfterTransaction}
+                vipFeePercent={userStats ? getVIPFee(userStats.current_level, userStats.total_sol_recovered) : 5}
+                userStats={userStats}
               />
             ) : (
               <Suspense fallback={
