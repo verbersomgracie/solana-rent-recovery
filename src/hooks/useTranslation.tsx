@@ -198,6 +198,17 @@ const translations: Record<Language, Record<string, string>> = {
     'vip.benefit.xp30': 'XP +30%',
     'vip.benefit.vipAccess': 'VIP access',
     'vip.benefit.specialRaffles': 'Special raffles',
+    
+    // VIP Progress
+    'vipProgress.title': 'VIP Progress',
+    'vipProgress.connectToSee': 'Connect wallet to see your VIP progress',
+    'vipProgress.maxTier': 'Max tier reached!',
+    'vipProgress.levels': 'levels',
+    'vipProgress.toGo': 'to go',
+    'vipProgress.levelsToGo': 'levels to go',
+    'vipProgress.progress': 'Progress',
+    'vipProgress.unlockNext': 'Reach next tier to unlock',
+    'vipProgress.lowerFees': 'lower fees',
   },
   
   pt: {
@@ -386,6 +397,17 @@ const translations: Record<Language, Record<string, string>> = {
     'vip.benefit.xp30': 'XP +30%',
     'vip.benefit.vipAccess': 'Acesso VIP',
     'vip.benefit.specialRaffles': 'Sorteios especiais',
+    
+    // VIP Progress
+    'vipProgress.title': 'Progresso VIP',
+    'vipProgress.connectToSee': 'Conecte a wallet para ver seu progresso VIP',
+    'vipProgress.maxTier': 'Nível máximo alcançado!',
+    'vipProgress.levels': 'níveis',
+    'vipProgress.toGo': 'restantes',
+    'vipProgress.levelsToGo': 'níveis restantes',
+    'vipProgress.progress': 'Progresso',
+    'vipProgress.unlockNext': 'Alcance o próximo nível para desbloquear',
+    'vipProgress.lowerFees': 'menos taxas',
   },
   
   es: {
@@ -574,6 +596,17 @@ const translations: Record<Language, Record<string, string>> = {
     'vip.benefit.xp30': 'XP +30%',
     'vip.benefit.vipAccess': 'Acceso VIP',
     'vip.benefit.specialRaffles': 'Sorteos especiales',
+    
+    // VIP Progress
+    'vipProgress.title': 'Progreso VIP',
+    'vipProgress.connectToSee': 'Conecta wallet para ver tu progreso VIP',
+    'vipProgress.maxTier': '¡Nivel máximo alcanzado!',
+    'vipProgress.levels': 'niveles',
+    'vipProgress.toGo': 'restantes',
+    'vipProgress.levelsToGo': 'niveles restantes',
+    'vipProgress.progress': 'Progreso',
+    'vipProgress.unlockNext': 'Alcanza el siguiente nivel para desbloquear',
+    'vipProgress.lowerFees': 'menos tarifas',
   },
   
   fr: {
@@ -762,6 +795,17 @@ const translations: Record<Language, Record<string, string>> = {
     'vip.benefit.xp30': 'XP +30%',
     'vip.benefit.vipAccess': 'Accès VIP',
     'vip.benefit.specialRaffles': 'Tirages spéciaux',
+    
+    // VIP Progress
+    'vipProgress.title': 'Progression VIP',
+    'vipProgress.connectToSee': 'Connectez wallet pour voir votre progression VIP',
+    'vipProgress.maxTier': 'Niveau maximum atteint!',
+    'vipProgress.levels': 'niveaux',
+    'vipProgress.toGo': 'restants',
+    'vipProgress.levelsToGo': 'niveaux restants',
+    'vipProgress.progress': 'Progression',
+    'vipProgress.unlockNext': 'Atteignez le niveau suivant pour débloquer',
+    'vipProgress.lowerFees': 'de frais en moins',
   },
   
   de: {
@@ -950,6 +994,17 @@ const translations: Record<Language, Record<string, string>> = {
     'vip.benefit.xp30': 'XP +30%',
     'vip.benefit.vipAccess': 'VIP-Zugang',
     'vip.benefit.specialRaffles': 'Spezielle Verlosungen',
+    
+    // VIP Progress
+    'vipProgress.title': 'VIP-Fortschritt',
+    'vipProgress.connectToSee': 'Wallet verbinden um VIP-Fortschritt zu sehen',
+    'vipProgress.maxTier': 'Maximales Level erreicht!',
+    'vipProgress.levels': 'Level',
+    'vipProgress.toGo': 'übrig',
+    'vipProgress.levelsToGo': 'Level übrig',
+    'vipProgress.progress': 'Fortschritt',
+    'vipProgress.unlockNext': 'Erreichen Sie das nächste Level für',
+    'vipProgress.lowerFees': 'weniger Gebühren',
   },
   
   zh: {
@@ -1138,6 +1193,17 @@ const translations: Record<Language, Record<string, string>> = {
     'vip.benefit.xp30': 'XP +30%',
     'vip.benefit.vipAccess': 'VIP访问',
     'vip.benefit.specialRaffles': '特别抽奖',
+    
+    // VIP Progress
+    'vipProgress.title': 'VIP进度',
+    'vipProgress.connectToSee': '连接钱包查看您的VIP进度',
+    'vipProgress.maxTier': '已达到最高等级！',
+    'vipProgress.levels': '等级',
+    'vipProgress.toGo': '剩余',
+    'vipProgress.levelsToGo': '等级剩余',
+    'vipProgress.progress': '进度',
+    'vipProgress.unlockNext': '达到下一等级解锁',
+    'vipProgress.lowerFees': '更低费用',
   },
 };
 

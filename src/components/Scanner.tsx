@@ -3,6 +3,7 @@ import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink, Coins, DollarSi
 import { Button } from "@/components/ui/button";
 import AccountCard from "@/components/AccountCard";
 import TransactionSummary from "@/components/TransactionSummary";
+import VIPProgressBar from "@/components/VIPProgressBar";
 import { ScannedAccount } from "@/hooks/useSolana";
 import { UserStats } from "@/hooks/useGamification";
 import { VIP_TIERS, getVIPTierIndex } from "@/hooks/useVIPTier";
@@ -409,6 +410,9 @@ const Scanner = ({
               <p className="text-xs text-muted-foreground text-center mt-4">
                 {t('scanner.confirmTx')}
               </p>
+
+              {/* VIP Progress Bar */}
+              <VIPProgressBar userStats={userStats} className="mt-6" />
 
               {/* Expandable account details */}
               <details className="mt-6">
