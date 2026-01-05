@@ -48,6 +48,11 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
       detected: false,
       deepLink: `https://backpack.app/ul/browse/${getCurrentUrl()}`,
       universalLink: `backpack://browse/${getCurrentUrl()}`
+    },
+    {
+      name: "WalletConnect",
+      icon: "https://avatars.githubusercontent.com/u/37784886",
+      detected: true // WalletConnect is always available
     }
   ]);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
@@ -60,12 +65,18 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
   useEffect(() => {
     // Detect installed wallets
     const detectWallets = () => {
-      setWallets(prev => prev.map(wallet => ({
-        ...wallet,
-        detected: wallet.name === "Phantom" ? !!window.phantom?.solana :
-                  wallet.name === "Solflare" ? !!window.solflare :
-                  wallet.name === "Backpack" ? !!window.backpack : false
-      })));
+      setWallets(prev => prev.map(wallet => {
+        // WalletConnect is always available
+        if (wallet.name === "WalletConnect") {
+          return { ...wallet, detected: true };
+        }
+        return {
+          ...wallet,
+          detected: wallet.name === "Phantom" ? !!window.phantom?.solana :
+                    wallet.name === "Solflare" ? !!window.solflare :
+                    wallet.name === "Backpack" ? !!window.backpack : false
+        };
+      }));
     };
 
     if (isOpen) {
@@ -84,8 +95,8 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
       return;
     }
 
-    // If wallet not detected on desktop, show install link
-    if (!wallet.detected && !isMobileDevice) {
+    // If wallet not detected on desktop, show install link (except WalletConnect)
+    if (!wallet.detected && !isMobileDevice && wallet.name !== "WalletConnect") {
       const installUrls: Record<string, string> = {
         "Phantom": "https://phantom.app/download",
         "Solflare": "https://solflare.com/download",
@@ -168,7 +179,9 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
                 <div className="font-semibold text-foreground group-hover:text-primary transition-colors">
                   {wallet.name}
                 </div>
-                {wallet.detected ? (
+                {wallet.name === "WalletConnect" ? (
+                  <div className="text-xs text-primary">Conectar qualquer wallet</div>
+                ) : wallet.detected ? (
                   <div className="text-xs text-success">Detectado</div>
                 ) : isMobileDevice ? (
                   <div className="text-xs text-primary flex items-center gap-1">
