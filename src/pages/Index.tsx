@@ -84,6 +84,13 @@ const Index = () => {
     disconnect();
   };
 
+  const handleReconnectWallet = async () => {
+    // Disconnect first to clear any cached connection
+    await disconnect();
+    // Show wallet modal to reconnect (this will ask for permission again)
+    setShowWalletModal(true);
+  };
+
   const handleNavigate = (section: string) => {
     const element = document.getElementById(section);
     if (element) {
@@ -100,6 +107,7 @@ const Index = () => {
             walletAddress={publicKey}
             userStats={userStats}
             onDisconnect={handleDisconnectWallet}
+            onReconnect={handleReconnectWallet}
             onNavigate={handleNavigate}
           />
           
