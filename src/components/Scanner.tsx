@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
-import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink, Coins, DollarSign } from "lucide-react";
+import { Search, Loader2, CheckCircle2, RefreshCw, ExternalLink, Coins, DollarSign, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccountCard from "@/components/AccountCard";
 import TransactionSummary from "@/components/TransactionSummary";
 import { ScannedAccount } from "@/hooks/useSolana";
+import { UserStats } from "@/hooks/useGamification";
+import { VIP_TIERS, getVIPTierIndex } from "@/hooks/useVIPTier";
 import confetti from "canvas-confetti";
 
 interface Account {
@@ -44,6 +46,8 @@ interface ScannerProps {
   isProcessing: boolean;
   simulationMode?: boolean;
   onTransactionComplete?: (solRecovered: number, accountsClosed: number) => void;
+  vipFeePercent?: number;
+  userStats?: UserStats | null;
 }
 
 const Scanner = ({ 
@@ -54,7 +58,9 @@ const Scanner = ({
   isScanning,
   isProcessing,
   simulationMode = false,
-  onTransactionComplete
+  onTransactionComplete,
+  vipFeePercent = 5,
+  userStats
 }: ScannerProps) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [scanComplete, setScanComplete] = useState(false);
@@ -198,8 +204,11 @@ const Scanner = ({
 
   const selectedAccounts = accounts.filter(acc => acc.selected);
   const totalRecoverable = selectedAccounts.reduce((sum, acc) => sum + acc.rentSol, 0);
-  const platformFee = totalRecoverable * (platformFeePercent / 100);
+  const actualFeePercent = userStats ? vipFeePercent : platformFeePercent;
+  const platformFee = totalRecoverable * (actualFeePercent / 100);
   const netAmount = totalRecoverable - platformFee;
+  const currentTierIndex = userStats ? getVIPTierIndex(userStats.current_level, userStats.total_sol_recovered) : 0;
+  const currentTier = VIP_TIERS[currentTierIndex];
 
   const handleRecover = useCallback(async () => {
     if (selectedAccounts.length === 0) return;
@@ -330,9 +339,38 @@ const Scanner = ({
                   <span className="font-bold">{accounts.length}</span>
                 </div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground">Taxa da plataforma ({platformFeePercent}%)</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">Taxa da plataforma</span>
+                    {userStats && actualFeePercent < 5 && (
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r ${currentTier.color} text-white`}>
+                        <Crown className="w-3 h-3" />
+                        {currentTier.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    {actualFeePercent < 5 ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground line-through text-sm">5%</span>
+                        <span className="text-green-500 font-bold">{actualFeePercent}%</span>
+                      </div>
+                    ) : (
+                      <span>{actualFeePercent}%</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-muted-foreground">Taxa cobrada</span>
                   <span className="text-amber-500">-{platformFee.toFixed(4)} SOL</span>
                 </div>
+                {actualFeePercent < 5 && (
+                  <div className="flex justify-between items-center mb-2 text-green-500">
+                    <span className="text-sm">💎 Desconto VIP</span>
+                    <span className="text-sm font-medium">
+                      Economizando {((totalRecoverable * 0.05) - platformFee).toFixed(4)} SOL
+                    </span>
+                  </div>
+                )}
                 <div className="border-t border-border pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="font-bold text-foreground">Você recebe</span>
