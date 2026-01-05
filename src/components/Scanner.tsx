@@ -43,6 +43,7 @@ interface ScannerProps {
   isScanning: boolean;
   isProcessing: boolean;
   simulationMode?: boolean;
+  onTransactionComplete?: (solRecovered: number, accountsClosed: number) => void;
 }
 
 const Scanner = ({ 
@@ -52,7 +53,8 @@ const Scanner = ({
   closeAccounts,
   isScanning,
   isProcessing,
-  simulationMode = false
+  simulationMode = false,
+  onTransactionComplete
 }: ScannerProps) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [scanComplete, setScanComplete] = useState(false);
@@ -203,6 +205,7 @@ const Scanner = ({
     if (selectedAccounts.length === 0) return;
     
     const accountAddresses = selectedAccounts.map(acc => acc.address);
+    const accountsCount = selectedAccounts.length;
     const result = await closeAccounts(accountAddresses);
     
     if (result.success) {
@@ -212,8 +215,10 @@ const Scanner = ({
       setAccounts(prev => prev.filter(acc => !acc.selected));
       // Trigger confetti celebration!
       triggerConfetti();
+      // Notify gamification system
+      onTransactionComplete?.(netAmount, accountsCount);
     }
-  }, [selectedAccounts, closeAccounts, netAmount]);
+  }, [selectedAccounts, closeAccounts, netAmount, onTransactionComplete]);
 
   // Simulate recovery
   const simulateRecover = useCallback(async () => {
