@@ -12,13 +12,15 @@ import WalletModal from "@/components/WalletModal";
 import GamificationDashboard from "@/components/gamification/GamificationDashboard";
 import AchievementUnlockModal from "@/components/gamification/AchievementUnlockModal";
 import ProfileSidebar from "@/components/ProfileSidebar";
+import ToolsTabs from "@/components/tools/ToolsTabs";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSolana } from "@/hooks/useSolana";
 import { useGamification } from "@/hooks/useGamification";
 import { getVIPFee } from "@/hooks/useVIPTier";
 import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Menu } from "lucide-react";
+import { Loader2, Wallet, Wrench } from "lucide-react";
 
 // Lazy load NearScanner to avoid loading NEAR dependencies when not needed
 const NearScanner = lazy(() => import("@/components/NearScanner"));
@@ -28,6 +30,7 @@ const Index = () => {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [simulationEnabled, setSimulationEnabled] = useState(false);
   const [selectedChain, setSelectedChain] = useState<Chain>("solana");
+  const [mainTab, setMainTab] = useState<"recover" | "tools">("recover");
   
   // Fetch simulation mode from database
   useEffect(() => {
@@ -48,13 +51,15 @@ const Index = () => {
   const { 
     isConnected, 
     publicKey, 
+    walletName,
     isConnecting,
     isScanning,
     isProcessing,
     connect, 
     disconnect,
     scanAccounts,
-    closeAccounts
+    closeAccounts,
+    getProvider
   } = useSolana();
 
   const {
@@ -127,41 +132,76 @@ const Index = () => {
             </header>
             
             <main className="flex-1 overflow-auto">
-              {/* Scanner Section - First */}
+              {/* Main Tabs */}
               <section id="scanner" className="py-12">
                 <div className="container mx-auto px-4">
-                  <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold text-foreground mb-2">{t('scanner.chooseChain')}</h2>
-                    <p className="text-muted-foreground">{t('scanner.selectNetwork')}</p>
-                  </div>
-                  
-                  <ChainSelector 
-                    selectedChain={selectedChain}
-                    onChainChange={setSelectedChain}
-                  />
-                  
-                  {selectedChain === "solana" ? (
-                    <Scanner 
-                      walletConnected={isConnected}
-                      walletAddress={publicKey}
-                      scanAccounts={scanAccounts}
-                      closeAccounts={closeAccounts}
-                      isScanning={isScanning}
-                      isProcessing={isProcessing}
-                      simulationMode={simulationEnabled}
-                      onTransactionComplete={updateStatsAfterTransaction}
-                      vipFeePercent={userStats ? getVIPFee(userStats.current_level, userStats.total_sol_recovered) : 5}
-                      userStats={userStats}
-                    />
-                  ) : (
-                    <Suspense fallback={
-                      <div className="flex items-center justify-center p-12">
-                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as "recover" | "tools")} className="w-full">
+                    <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8 bg-muted/30 p-1 rounded-xl">
+                      <TabsTrigger 
+                        value="recover" 
+                        className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground rounded-lg"
+                      >
+                        <Wallet className="w-4 h-4" />
+                        Recover SOL
+                      </TabsTrigger>
+                      <TabsTrigger 
+                        value="tools" 
+                        className="flex items-center gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-primary-foreground rounded-lg"
+                      >
+                        <Wrench className="w-4 h-4" />
+                        Tools
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="recover">
+                      <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-foreground mb-2">{t('scanner.chooseChain')}</h2>
+                        <p className="text-muted-foreground">{t('scanner.selectNetwork')}</p>
                       </div>
-                    }>
-                      <NearScanner simulationMode={simulationEnabled} />
-                    </Suspense>
-                  )}
+                      
+                      <ChainSelector 
+                        selectedChain={selectedChain}
+                        onChainChange={setSelectedChain}
+                      />
+                      
+                      {selectedChain === "solana" ? (
+                        <Scanner 
+                          walletConnected={isConnected}
+                          walletAddress={publicKey}
+                          scanAccounts={scanAccounts}
+                          closeAccounts={closeAccounts}
+                          isScanning={isScanning}
+                          isProcessing={isProcessing}
+                          simulationMode={simulationEnabled}
+                          onTransactionComplete={updateStatsAfterTransaction}
+                          vipFeePercent={userStats ? getVIPFee(userStats.current_level, userStats.total_sol_recovered) : 5}
+                          userStats={userStats}
+                        />
+                      ) : (
+                        <Suspense fallback={
+                          <div className="flex items-center justify-center p-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                          </div>
+                        }>
+                          <NearScanner simulationMode={simulationEnabled} />
+                        </Suspense>
+                      )}
+                    </TabsContent>
+
+                    <TabsContent value="tools">
+                      <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-foreground mb-2">Ferramentas Solana</h2>
+                        <p className="text-muted-foreground">Burn tokens, envie em lote ou troque tokens</p>
+                      </div>
+                      
+                      <ToolsTabs 
+                        walletAddress={publicKey}
+                        isConnected={isConnected}
+                        getProvider={getProvider}
+                        walletName={walletName}
+                      />
+                    </TabsContent>
+                  </Tabs>
                 </div>
               </section>
 

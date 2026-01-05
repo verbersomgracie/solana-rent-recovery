@@ -443,6 +443,13 @@ export function useSolana() {
     }
   }, [publicKey, walletName, getProvider, logTransaction]);
 
+  const getCurrentProvider = useCallback(() => {
+    if (walletName === 'WalletConnect' && walletConnectRef.current) {
+      return walletConnectRef.current;
+    }
+    return walletName ? getProvider(walletName) : null;
+  }, [walletName, getProvider]);
+
   return {
     isConnected,
     publicKey,
@@ -453,6 +460,7 @@ export function useSolana() {
     connect,
     disconnect,
     scanAccounts,
-    closeAccounts
+    closeAccounts,
+    getProvider: getCurrentProvider
   };
 }
