@@ -4,6 +4,7 @@ import HeroSection from "@/components/HeroSection";
 import Scanner from "@/components/Scanner";
 import ChainSelector, { Chain } from "@/components/ChainSelector";
 import HowItWorks from "@/components/HowItWorks";
+import VIPBanner from "@/components/VIPBanner";
 import FeesSection from "@/components/FeesSection";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
@@ -136,6 +137,8 @@ const Index = () => {
         </section>
         
         <HowItWorks />
+        
+        <VIPBanner />
         
         {/* Gamification Section */}
         <section id="profile" className="py-20">

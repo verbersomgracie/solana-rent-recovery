@@ -18,43 +18,43 @@ export const VIP_TIERS: VIPTier[] = [
     fee: 5.0,
     icon: "Star",
     color: "from-amber-700 to-amber-900",
-    benefits: ["Acesso básico", "Conquistas padrão"]
+    benefits: ["vip.benefit.basicAccess", "vip.benefit.standardAchievements"]
   },
   {
-    name: "Prata",
+    name: "Silver",
     minLevel: 5,
     minSol: 5,
     fee: 4.5,
     icon: "Shield",
     color: "from-gray-400 to-gray-600",
-    benefits: ["Taxa reduzida 4.5%", "Badge exclusivo", "Suporte prioritário"]
+    benefits: ["vip.benefit.reducedFee45", "vip.benefit.exclusiveBadge", "vip.benefit.prioritySupport"]
   },
   {
-    name: "Ouro",
+    name: "Gold",
     minLevel: 10,
     minSol: 25,
     fee: 4.0,
     icon: "Crown",
     color: "from-yellow-400 to-amber-600",
-    benefits: ["Taxa reduzida 4%", "XP +10%", "Acesso antecipado"]
+    benefits: ["vip.benefit.reducedFee40", "vip.benefit.xp10", "vip.benefit.earlyAccess"]
   },
   {
-    name: "Platina",
+    name: "Platinum",
     minLevel: 20,
     minSol: 100,
     fee: 3.5,
     icon: "Flame",
     color: "from-cyan-400 to-blue-600",
-    benefits: ["Taxa reduzida 3.5%", "XP +20%", "NFT exclusivo"]
+    benefits: ["vip.benefit.reducedFee35", "vip.benefit.xp20", "vip.benefit.exclusiveNft"]
   },
   {
-    name: "Diamante",
+    name: "Diamond",
     minLevel: 50,
     minSol: 500,
     fee: 3.0,
     icon: "Diamond",
     color: "from-purple-400 to-pink-600",
-    benefits: ["Taxa mínima 3%", "XP +30%", "Acesso VIP", "Sorteios especiais"]
+    benefits: ["vip.benefit.minFee30", "vip.benefit.xp30", "vip.benefit.vipAccess", "vip.benefit.specialRaffles"]
   }
 ];
 

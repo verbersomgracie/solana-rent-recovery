@@ -162,6 +162,42 @@ const translations: Record<Language, Record<string, string>> = {
     
     // General
     'general.loading': 'Loading...',
+    
+    // Stats
+    'stats.solRecovered': 'SOL Recovered',
+    'stats.accountsClosed': 'Accounts Closed',
+    
+    // VIP Banner
+    'vipBanner.badge': 'Loyalty Rewards',
+    'vipBanner.title': 'Recurring users get',
+    'vipBanner.titleHighlight': 'Lower Fees',
+    'vipBanner.subtitle': 'The more you use our platform, the less you pay. Automatic progression system based on your level and total SOL recovered.',
+    'vipBanner.level': 'Level',
+    'vipBanner.feesFrom': 'Fees from',
+    'vipBanner.feesDesc': 'Diamond tier members pay up to 40% less in fees',
+    'vipBanner.automatic': 'Automatic Upgrade',
+    'vipBanner.automaticDesc': 'Level up by using the platform and earn more XP',
+    'vipBanner.exclusive': 'Exclusive Benefits',
+    'vipBanner.exclusiveDesc': 'Priority support, exclusive badges and special raffles',
+    'vipBanner.cta': 'Start recovering SOL now and',
+    'vipBanner.ctaHighlight': 'watch your fees drop automatically!',
+    
+    // VIP Benefits
+    'vip.benefit.basicAccess': 'Basic access',
+    'vip.benefit.standardAchievements': 'Standard achievements',
+    'vip.benefit.reducedFee45': '4.5% reduced fee',
+    'vip.benefit.exclusiveBadge': 'Exclusive badge',
+    'vip.benefit.prioritySupport': 'Priority support',
+    'vip.benefit.reducedFee40': '4% reduced fee',
+    'vip.benefit.xp10': 'XP +10%',
+    'vip.benefit.earlyAccess': 'Early access',
+    'vip.benefit.reducedFee35': '3.5% reduced fee',
+    'vip.benefit.xp20': 'XP +20%',
+    'vip.benefit.exclusiveNft': 'Exclusive NFT',
+    'vip.benefit.minFee30': '3% minimum fee',
+    'vip.benefit.xp30': 'XP +30%',
+    'vip.benefit.vipAccess': 'VIP access',
+    'vip.benefit.specialRaffles': 'Special raffles',
   },
   
   pt: {
@@ -314,6 +350,42 @@ const translations: Record<Language, Record<string, string>> = {
     
     // General
     'general.loading': 'Carregando...',
+    
+    // Stats
+    'stats.solRecovered': 'SOL Recuperado',
+    'stats.accountsClosed': 'Contas Fechadas',
+    
+    // VIP Banner
+    'vipBanner.badge': 'Recompensas de Fidelidade',
+    'vipBanner.title': 'Usuários recorrentes pagam',
+    'vipBanner.titleHighlight': 'Taxas Menores',
+    'vipBanner.subtitle': 'Quanto mais você usa nossa plataforma, menos você paga. Sistema de progressão automático baseado no seu nível e SOL total recuperado.',
+    'vipBanner.level': 'Nível',
+    'vipBanner.feesFrom': 'Taxas a partir de',
+    'vipBanner.feesDesc': 'Membros Diamante pagam até 40% menos em taxas',
+    'vipBanner.automatic': 'Upgrade Automático',
+    'vipBanner.automaticDesc': 'Suba de nível usando a plataforma e ganhe mais XP',
+    'vipBanner.exclusive': 'Benefícios Exclusivos',
+    'vipBanner.exclusiveDesc': 'Suporte prioritário, badges exclusivos e sorteios especiais',
+    'vipBanner.cta': 'Comece a recuperar SOL agora e',
+    'vipBanner.ctaHighlight': 'veja suas taxas caírem automaticamente!',
+    
+    // VIP Benefits
+    'vip.benefit.basicAccess': 'Acesso básico',
+    'vip.benefit.standardAchievements': 'Conquistas padrão',
+    'vip.benefit.reducedFee45': 'Taxa reduzida 4.5%',
+    'vip.benefit.exclusiveBadge': 'Badge exclusivo',
+    'vip.benefit.prioritySupport': 'Suporte prioritário',
+    'vip.benefit.reducedFee40': 'Taxa reduzida 4%',
+    'vip.benefit.xp10': 'XP +10%',
+    'vip.benefit.earlyAccess': 'Acesso antecipado',
+    'vip.benefit.reducedFee35': 'Taxa reduzida 3.5%',
+    'vip.benefit.xp20': 'XP +20%',
+    'vip.benefit.exclusiveNft': 'NFT exclusivo',
+    'vip.benefit.minFee30': 'Taxa mínima 3%',
+    'vip.benefit.xp30': 'XP +30%',
+    'vip.benefit.vipAccess': 'Acesso VIP',
+    'vip.benefit.specialRaffles': 'Sorteios especiais',
   },
   
   es: {
@@ -466,6 +538,42 @@ const translations: Record<Language, Record<string, string>> = {
     
     // General
     'general.loading': 'Cargando...',
+    
+    // Stats
+    'stats.solRecovered': 'SOL Recuperado',
+    'stats.accountsClosed': 'Cuentas Cerradas',
+    
+    // VIP Banner
+    'vipBanner.badge': 'Recompensas de Fidelidad',
+    'vipBanner.title': 'Usuarios recurrentes pagan',
+    'vipBanner.titleHighlight': 'Tarifas Menores',
+    'vipBanner.subtitle': 'Cuanto más uses nuestra plataforma, menos pagas. Sistema de progresión automático basado en tu nivel y SOL total recuperado.',
+    'vipBanner.level': 'Nivel',
+    'vipBanner.feesFrom': 'Tarifas desde',
+    'vipBanner.feesDesc': 'Miembros Diamante pagan hasta 40% menos en tarifas',
+    'vipBanner.automatic': 'Ascenso Automático',
+    'vipBanner.automaticDesc': 'Sube de nivel usando la plataforma y gana más XP',
+    'vipBanner.exclusive': 'Beneficios Exclusivos',
+    'vipBanner.exclusiveDesc': 'Soporte prioritario, badges exclusivos y sorteos especiales',
+    'vipBanner.cta': 'Comienza a recuperar SOL ahora y',
+    'vipBanner.ctaHighlight': '¡mira cómo bajan tus tarifas automáticamente!',
+    
+    // VIP Benefits
+    'vip.benefit.basicAccess': 'Acceso básico',
+    'vip.benefit.standardAchievements': 'Logros estándar',
+    'vip.benefit.reducedFee45': 'Tarifa reducida 4.5%',
+    'vip.benefit.exclusiveBadge': 'Badge exclusivo',
+    'vip.benefit.prioritySupport': 'Soporte prioritario',
+    'vip.benefit.reducedFee40': 'Tarifa reducida 4%',
+    'vip.benefit.xp10': 'XP +10%',
+    'vip.benefit.earlyAccess': 'Acceso anticipado',
+    'vip.benefit.reducedFee35': 'Tarifa reducida 3.5%',
+    'vip.benefit.xp20': 'XP +20%',
+    'vip.benefit.exclusiveNft': 'NFT exclusivo',
+    'vip.benefit.minFee30': 'Tarifa mínima 3%',
+    'vip.benefit.xp30': 'XP +30%',
+    'vip.benefit.vipAccess': 'Acceso VIP',
+    'vip.benefit.specialRaffles': 'Sorteos especiales',
   },
   
   fr: {
@@ -618,6 +726,42 @@ const translations: Record<Language, Record<string, string>> = {
     
     // General
     'general.loading': 'Chargement...',
+    
+    // Stats
+    'stats.solRecovered': 'SOL Récupéré',
+    'stats.accountsClosed': 'Comptes Fermés',
+    
+    // VIP Banner
+    'vipBanner.badge': 'Récompenses Fidélité',
+    'vipBanner.title': 'Les utilisateurs réguliers paient',
+    'vipBanner.titleHighlight': 'Moins de Frais',
+    'vipBanner.subtitle': 'Plus vous utilisez notre plateforme, moins vous payez. Système de progression automatique basé sur votre niveau et SOL total récupéré.',
+    'vipBanner.level': 'Niveau',
+    'vipBanner.feesFrom': 'Frais à partir de',
+    'vipBanner.feesDesc': 'Les membres Diamant paient jusqu\'à 40% de frais en moins',
+    'vipBanner.automatic': 'Montée Automatique',
+    'vipBanner.automaticDesc': 'Montez de niveau en utilisant la plateforme et gagnez plus de XP',
+    'vipBanner.exclusive': 'Avantages Exclusifs',
+    'vipBanner.exclusiveDesc': 'Support prioritaire, badges exclusifs et tirages spéciaux',
+    'vipBanner.cta': 'Commencez à récupérer du SOL maintenant et',
+    'vipBanner.ctaHighlight': 'regardez vos frais baisser automatiquement!',
+    
+    // VIP Benefits
+    'vip.benefit.basicAccess': 'Accès de base',
+    'vip.benefit.standardAchievements': 'Succès standard',
+    'vip.benefit.reducedFee45': 'Frais réduits 4.5%',
+    'vip.benefit.exclusiveBadge': 'Badge exclusif',
+    'vip.benefit.prioritySupport': 'Support prioritaire',
+    'vip.benefit.reducedFee40': 'Frais réduits 4%',
+    'vip.benefit.xp10': 'XP +10%',
+    'vip.benefit.earlyAccess': 'Accès anticipé',
+    'vip.benefit.reducedFee35': 'Frais réduits 3.5%',
+    'vip.benefit.xp20': 'XP +20%',
+    'vip.benefit.exclusiveNft': 'NFT exclusif',
+    'vip.benefit.minFee30': 'Frais minimum 3%',
+    'vip.benefit.xp30': 'XP +30%',
+    'vip.benefit.vipAccess': 'Accès VIP',
+    'vip.benefit.specialRaffles': 'Tirages spéciaux',
   },
   
   de: {
@@ -770,6 +914,42 @@ const translations: Record<Language, Record<string, string>> = {
     
     // General
     'general.loading': 'Laden...',
+    
+    // Stats
+    'stats.solRecovered': 'SOL Wiederhergestellt',
+    'stats.accountsClosed': 'Geschlossene Konten',
+    
+    // VIP Banner
+    'vipBanner.badge': 'Treue-Belohnungen',
+    'vipBanner.title': 'Wiederkehrende Nutzer zahlen',
+    'vipBanner.titleHighlight': 'Niedrigere Gebühren',
+    'vipBanner.subtitle': 'Je mehr Sie unsere Plattform nutzen, desto weniger zahlen Sie. Automatisches Progressionssystem basierend auf Ihrem Level und insgesamt wiederhergestelltem SOL.',
+    'vipBanner.level': 'Level',
+    'vipBanner.feesFrom': 'Gebühren ab',
+    'vipBanner.feesDesc': 'Diamant-Mitglieder zahlen bis zu 40% weniger Gebühren',
+    'vipBanner.automatic': 'Automatischer Aufstieg',
+    'vipBanner.automaticDesc': 'Steigen Sie durch Nutzung der Plattform auf und verdienen Sie mehr XP',
+    'vipBanner.exclusive': 'Exklusive Vorteile',
+    'vipBanner.exclusiveDesc': 'Prioritärer Support, exklusive Badges und spezielle Verlosungen',
+    'vipBanner.cta': 'Beginnen Sie jetzt mit der SOL-Wiederherstellung und',
+    'vipBanner.ctaHighlight': 'sehen Sie, wie Ihre Gebühren automatisch sinken!',
+    
+    // VIP Benefits
+    'vip.benefit.basicAccess': 'Basiszugang',
+    'vip.benefit.standardAchievements': 'Standard-Erfolge',
+    'vip.benefit.reducedFee45': 'Reduzierte Gebühr 4.5%',
+    'vip.benefit.exclusiveBadge': 'Exklusives Badge',
+    'vip.benefit.prioritySupport': 'Prioritärer Support',
+    'vip.benefit.reducedFee40': 'Reduzierte Gebühr 4%',
+    'vip.benefit.xp10': 'XP +10%',
+    'vip.benefit.earlyAccess': 'Frühzeitiger Zugang',
+    'vip.benefit.reducedFee35': 'Reduzierte Gebühr 3.5%',
+    'vip.benefit.xp20': 'XP +20%',
+    'vip.benefit.exclusiveNft': 'Exklusives NFT',
+    'vip.benefit.minFee30': 'Mindestgebühr 3%',
+    'vip.benefit.xp30': 'XP +30%',
+    'vip.benefit.vipAccess': 'VIP-Zugang',
+    'vip.benefit.specialRaffles': 'Spezielle Verlosungen',
   },
   
   zh: {
@@ -922,6 +1102,42 @@ const translations: Record<Language, Record<string, string>> = {
     
     // General
     'general.loading': '加载中...',
+    
+    // Stats
+    'stats.solRecovered': 'SOL已恢复',
+    'stats.accountsClosed': '已关闭账户',
+    
+    // VIP Banner
+    'vipBanner.badge': '忠诚奖励',
+    'vipBanner.title': '老用户支付',
+    'vipBanner.titleHighlight': '更低的费用',
+    'vipBanner.subtitle': '您使用我们平台越多，支付越少。基于您的等级和总恢复SOL的自动进阶系统。',
+    'vipBanner.level': '等级',
+    'vipBanner.feesFrom': '费用低至',
+    'vipBanner.feesDesc': '钻石会员支付的费用减少高达40%',
+    'vipBanner.automatic': '自动升级',
+    'vipBanner.automaticDesc': '通过使用平台升级并赚取更多XP',
+    'vipBanner.exclusive': '专属福利',
+    'vipBanner.exclusiveDesc': '优先支持、专属徽章和特别抽奖',
+    'vipBanner.cta': '现在开始恢复SOL，',
+    'vipBanner.ctaHighlight': '看着您的费用自动降低！',
+    
+    // VIP Benefits
+    'vip.benefit.basicAccess': '基本访问',
+    'vip.benefit.standardAchievements': '标准成就',
+    'vip.benefit.reducedFee45': '4.5%优惠费率',
+    'vip.benefit.exclusiveBadge': '专属徽章',
+    'vip.benefit.prioritySupport': '优先支持',
+    'vip.benefit.reducedFee40': '4%优惠费率',
+    'vip.benefit.xp10': 'XP +10%',
+    'vip.benefit.earlyAccess': '抢先体验',
+    'vip.benefit.reducedFee35': '3.5%优惠费率',
+    'vip.benefit.xp20': 'XP +20%',
+    'vip.benefit.exclusiveNft': '专属NFT',
+    'vip.benefit.minFee30': '3%最低费率',
+    'vip.benefit.xp30': 'XP +30%',
+    'vip.benefit.vipAccess': 'VIP访问',
+    'vip.benefit.specialRaffles': '特别抽奖',
   },
 };
 
