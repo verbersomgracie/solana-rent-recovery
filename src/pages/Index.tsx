@@ -13,6 +13,7 @@ import AchievementUnlockModal from "@/components/gamification/AchievementUnlockM
 import { useSolana } from "@/hooks/useSolana";
 import { useGamification } from "@/hooks/useGamification";
 import { getVIPFee } from "@/hooks/useVIPTier";
+import { useTranslation } from "@/hooks/useTranslation";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
@@ -20,6 +21,7 @@ import { Loader2 } from "lucide-react";
 const NearScanner = lazy(() => import("@/components/NearScanner"));
 
 const Index = () => {
+  const { t } = useTranslation();
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [simulationEnabled, setSimulationEnabled] = useState(false);
   const [selectedChain, setSelectedChain] = useState<Chain>("solana");
@@ -98,8 +100,8 @@ const Index = () => {
         <section id="scanner" className="py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">Escolha a Blockchain</h2>
-              <p className="text-muted-foreground">Selecione a rede para recuperar seus fundos</p>
+              <h2 className="text-3xl font-bold text-foreground mb-2">{t('scanner.chooseChain')}</h2>
+              <p className="text-muted-foreground">{t('scanner.selectNetwork')}</p>
             </div>
             
             <ChainSelector 
@@ -139,8 +141,8 @@ const Index = () => {
         <section id="profile" className="py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-2">Seu Perfil</h2>
-              <p className="text-muted-foreground">Conquistas, estatísticas e ranking</p>
+              <h2 className="text-3xl font-bold text-foreground mb-2">{t('profile.title')}</h2>
+              <p className="text-muted-foreground">{t('profile.subtitle')}</p>
             </div>
             
             <GamificationDashboard

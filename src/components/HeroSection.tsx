@@ -1,6 +1,7 @@
 import { ArrowDown, Sparkles, Zap, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LiveStatsCounter from "./LiveStatsCounter";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface HeroSectionProps {
   onConnectWallet: () => void;
@@ -8,6 +9,8 @@ interface HeroSectionProps {
 }
 
 const HeroSection = ({ onConnectWallet, walletConnected }: HeroSectionProps) => {
+  const { t } = useTranslation();
+  
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-16 overflow-hidden">
       {/* Background effects */}
@@ -28,16 +31,13 @@ const HeroSection = ({ onConnectWallet, walletConnected }: HeroSectionProps) => 
 
           {/* Main heading */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 animate-fade-in-up">
-            Recupere o{" "}
-            <span className="text-gradient">SOL</span>
-            <br />
-            Preso nas Suas Contas
+            {t('hero.title')}{" "}
+            <span className="text-gradient">{t('hero.titleHighlight')}</span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-            Escaneie sua wallet, identifique contas vazias e NFTs sem utilidade, 
-            e recupere o SOL de rent. <span className="text-primary font-medium">Ganhe XP, suba de nível e pague menos taxas!</span>
+            {t('hero.subtitle')}
           </p>
 
           {/* Live Stats Counter */}
@@ -50,17 +50,17 @@ const HeroSection = ({ onConnectWallet, walletConnected }: HeroSectionProps) => 
             {!walletConnected ? (
               <Button variant="gradient" size="xl" onClick={onConnectWallet} className="group">
                 <Zap className="w-5 h-5 group-hover:animate-pulse" />
-                Começar Agora
+                {t('hero.cta')}
               </Button>
             ) : (
               <Button variant="gradient" size="xl" onClick={() => document.getElementById('scanner')?.scrollIntoView({ behavior: 'smooth' })}>
                 <Zap className="w-5 h-5" />
-                Escanear Wallet
+                {t('hero.cta')}
               </Button>
             )}
             <Button variant="glass" size="xl" onClick={() => document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth' })}>
               <Trophy className="w-5 h-5" />
-              Ver Ranking
+              {t('hero.ranking')}
             </Button>
           </div>
 
@@ -68,15 +68,15 @@ const HeroSection = ({ onConnectWallet, walletConnected }: HeroSectionProps) => 
           <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
               <span className="text-warning">👑</span>
-              <span className="text-muted-foreground">Taxas a partir de <span className="text-success font-medium">3%</span></span>
+              <span className="text-muted-foreground">{t('hero.benefit.noFees')}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
               <span className="text-primary">🔥</span>
-              <span className="text-muted-foreground">Streak diária = <span className="text-primary font-medium">+XP</span></span>
+              <span className="text-muted-foreground">{t('hero.benefit.fast')}</span>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
-              <span className="text-secondary">🎰</span>
-              <span className="text-muted-foreground">Roda da Sorte após transações</span>
+              <span className="text-secondary">🔒</span>
+              <span className="text-muted-foreground">{t('hero.benefit.secure')}</span>
             </div>
           </div>
 

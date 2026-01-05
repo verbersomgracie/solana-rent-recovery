@@ -1,5 +1,7 @@
 import { Flame, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/hooks/useTranslation";
+import LanguageSelector from "@/components/LanguageSelector";
 
 interface HeaderProps {
   walletConnected: boolean;
@@ -9,6 +11,8 @@ interface HeaderProps {
 }
 
 const Header = ({ walletConnected, walletAddress, onConnectWallet, onDisconnectWallet }: HeaderProps) => {
+  const { t } = useTranslation();
+  
   const formatAddress = (address: string) => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
   };
@@ -24,40 +28,42 @@ const Header = ({ walletConnected, walletAddress, onConnectWallet, onDisconnectW
           </div>
           <div>
             <h1 className="text-lg font-bold text-gradient">SOL Reclaim</h1>
-            <p className="text-xs text-muted-foreground">Recupere seu SOL</p>
+            <p className="text-xs text-muted-foreground hidden sm:block">Recover your SOL</p>
           </div>
         </div>
 
         <nav className="hidden md:flex items-center gap-6">
           <a href="#como-funciona" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Como Funciona
+            {t('nav.howItWorks')}
           </a>
           <a href="#profile" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Perfil
+            {t('nav.profile')}
           </a>
           <a href="#taxas" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            Taxas
+            {t('nav.fees')}
           </a>
           <a href="#faq" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            FAQ
+            {t('nav.faq')}
           </a>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <LanguageSelector />
+          
           {walletConnected && walletAddress ? (
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg bg-muted/50 border border-border">
+            <div className="flex items-center gap-2">
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border">
                 <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
                 <span className="text-sm font-mono text-foreground">{formatAddress(walletAddress)}</span>
               </div>
               <Button variant="outline" size="sm" onClick={onDisconnectWallet}>
-                Desconectar
+                {t('wallet.disconnect')}
               </Button>
             </div>
           ) : (
             <Button variant="gradient" onClick={onConnectWallet} className="gap-2">
               <Wallet className="w-4 h-4" />
-              Conectar Wallet
+              <span className="hidden sm:inline">{t('wallet.connect')}</span>
             </Button>
           )}
         </div>
