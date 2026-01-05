@@ -15,9 +15,9 @@ import {
 
 interface Profile {
   id: string;
-  email: string | null;
   wallet_address: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 interface Transaction {
@@ -946,7 +946,7 @@ const Admin = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Email</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">ID</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Wallet</th>
                       <th className="text-left py-3 px-4 font-medium text-muted-foreground">Cadastrado em</th>
                     </tr>
@@ -954,7 +954,7 @@ const Admin = () => {
                   <tbody>
                     {profiles.map((profile) => (
                       <tr key={profile.id} className="border-b border-border/50 hover:bg-muted/50">
-                        <td className="py-3 px-4">{profile.email || "N/A"}</td>
+                        <td className="py-3 px-4 font-mono text-xs">{profile.id.slice(0, 8)}...</td>
                         <td className="py-3 px-4 font-mono text-sm">
                           {profile.wallet_address ? (
                             <div className="flex items-center gap-2">
