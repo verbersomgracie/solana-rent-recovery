@@ -1,5 +1,6 @@
-import { ArrowDown, Sparkles, Zap } from "lucide-react";
+import { ArrowDown, Sparkles, Zap, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import LiveStatsCounter from "./LiveStatsCounter";
 
 interface HeroSectionProps {
   onConnectWallet: () => void;
@@ -13,14 +14,16 @@ const HeroSection = ({ onConnectWallet, walletConnected }: HeroSectionProps) => 
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-float" />
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-secondary/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 right-1/4 w-64 h-64 bg-warning/5 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-5xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6 animate-fade-in">
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm text-muted-foreground">Solana Network</span>
+            <span className="text-sm text-muted-foreground">Solana & NEAR Network</span>
+            <Trophy className="w-4 h-4 text-warning" />
           </div>
 
           {/* Main heading */}
@@ -32,25 +35,14 @@ const HeroSection = ({ onConnectWallet, walletConnected }: HeroSectionProps) => 
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             Escaneie sua wallet, identifique contas vazias e NFTs sem utilidade, 
-            e recupere o SOL de rent de forma segura e automática.
+            e recupere o SOL de rent. <span className="text-primary font-medium">Ganhe XP, suba de nível e pague menos taxas!</span>
           </p>
 
-          {/* Stats */}
-          <div className="flex flex-wrap justify-center gap-8 mb-10 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-gradient">50K+</div>
-              <div className="text-sm text-muted-foreground">Contas Fechadas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-gradient">2,500+</div>
-              <div className="text-sm text-muted-foreground">SOL Recuperado</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl sm:text-4xl font-bold text-gradient">5%</div>
-              <div className="text-sm text-muted-foreground">Taxa Mínima</div>
-            </div>
+          {/* Live Stats Counter */}
+          <div className="mb-10 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
+            <LiveStatsCounter />
           </div>
 
           {/* CTA Buttons */}
@@ -66,9 +58,26 @@ const HeroSection = ({ onConnectWallet, walletConnected }: HeroSectionProps) => 
                 Escanear Wallet
               </Button>
             )}
-            <Button variant="glass" size="xl" onClick={() => document.getElementById('como-funciona')?.scrollIntoView({ behavior: 'smooth' })}>
-              Saiba Mais
+            <Button variant="glass" size="xl" onClick={() => document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth' })}>
+              <Trophy className="w-5 h-5" />
+              Ver Ranking
             </Button>
+          </div>
+
+          {/* VIP Benefits teaser */}
+          <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
+              <span className="text-warning">👑</span>
+              <span className="text-muted-foreground">Taxas a partir de <span className="text-success font-medium">3%</span></span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
+              <span className="text-primary">🔥</span>
+              <span className="text-muted-foreground">Streak diária = <span className="text-primary font-medium">+XP</span></span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50">
+              <span className="text-secondary">🎰</span>
+              <span className="text-muted-foreground">Roda da Sorte após transações</span>
+            </div>
           </div>
 
           {/* Scroll indicator */}
