@@ -1,4 +1,4 @@
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, ExternalLink, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface WalletModalProps {
@@ -12,27 +12,50 @@ interface WalletInfo {
   name: string;
   icon: string;
   detected: boolean;
+  deepLink?: string;
+  universalLink?: string;
 }
+
+// Detect if user is on mobile
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+// Get current URL for redirect after wallet connection
+const getCurrentUrl = () => {
+  return encodeURIComponent(window.location.href);
+};
 
 const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletModalProps) => {
   const [wallets, setWallets] = useState<WalletInfo[]>([
     {
       name: "Phantom",
       icon: "https://phantom.app/img/phantom-icon-purple.svg",
-      detected: false
+      detected: false,
+      deepLink: `https://phantom.app/ul/browse/${getCurrentUrl()}?ref=${getCurrentUrl()}`,
+      universalLink: `phantom://browse/${getCurrentUrl()}`
     },
     {
       name: "Solflare",
       icon: "https://solflare.com/favicon.ico",
-      detected: false
+      detected: false,
+      deepLink: `https://solflare.com/ul/v1/browse/${getCurrentUrl()}?ref=${getCurrentUrl()}`,
+      universalLink: `solflare://ul/v1/browse/${getCurrentUrl()}`
     },
     {
       name: "Backpack",
       icon: "https://backpack.app/favicon.ico",
-      detected: false
+      detected: false,
+      deepLink: `https://backpack.app/ul/browse/${getCurrentUrl()}`,
+      universalLink: `backpack://browse/${getCurrentUrl()}`
     }
   ]);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+  useEffect(() => {
+    setIsMobileDevice(isMobile());
+  }, []);
 
   useEffect(() => {
     // Detect installed wallets
@@ -53,9 +76,27 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
     }
   }, [isOpen]);
 
-  const handleSelectWallet = async (walletName: string) => {
-    setConnectingWallet(walletName);
-    const success = await onSelectWallet(walletName);
+  const handleSelectWallet = async (wallet: WalletInfo) => {
+    // If on mobile and wallet not detected, open deep link
+    if (isMobileDevice && !wallet.detected && wallet.deepLink) {
+      // Try universal link first, then fall back to deep link
+      window.location.href = wallet.deepLink;
+      return;
+    }
+
+    // If wallet not detected on desktop, show install link
+    if (!wallet.detected && !isMobileDevice) {
+      const installUrls: Record<string, string> = {
+        "Phantom": "https://phantom.app/download",
+        "Solflare": "https://solflare.com/download",
+        "Backpack": "https://backpack.app/download"
+      };
+      window.open(installUrls[wallet.name], "_blank");
+      return;
+    }
+
+    setConnectingWallet(wallet.name);
+    const success = await onSelectWallet(wallet.name);
     if (success) {
       onClose();
     }
@@ -90,12 +131,22 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
           </p>
         </div>
 
+        {/* Mobile info banner */}
+        {isMobileDevice && (
+          <div className="mb-4 p-3 rounded-lg bg-primary/10 border border-primary/20">
+            <div className="flex items-center gap-2 text-sm text-primary">
+              <Smartphone className="w-4 h-4" />
+              <span>Toque para abrir o app da wallet</span>
+            </div>
+          </div>
+        )}
+
         {/* Wallet list */}
         <div className="space-y-3">
           {wallets.map((wallet) => (
             <button
               key={wallet.name}
-              onClick={() => handleSelectWallet(wallet.name)}
+              onClick={() => handleSelectWallet(wallet)}
               disabled={connectingWallet !== null}
               className="w-full flex items-center gap-4 p-4 rounded-xl glass hover:border-primary/30 hover:bg-muted/50 transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -119,8 +170,13 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
                 </div>
                 {wallet.detected ? (
                   <div className="text-xs text-success">Detectado</div>
+                ) : isMobileDevice ? (
+                  <div className="text-xs text-primary flex items-center gap-1">
+                    <ExternalLink className="w-3 h-3" />
+                    Abrir no app
+                  </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground">Não instalado</div>
+                  <div className="text-xs text-muted-foreground">Clique para instalar</div>
                 )}
               </div>
               <div className="w-2 h-2 rounded-full bg-muted group-hover:bg-primary transition-colors" />
