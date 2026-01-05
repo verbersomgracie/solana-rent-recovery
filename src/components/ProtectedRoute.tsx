@@ -18,7 +18,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        navigate(requireAdmin ? "/admin/login" : "/auth");
+        navigate("/admin/login");
         return;
       }
 
@@ -41,7 +41,7 @@ const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRouteProps)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!session) {
-          navigate("/auth");
+          navigate("/admin/login");
         }
       }
     );
