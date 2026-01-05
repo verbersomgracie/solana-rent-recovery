@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Flame, Wallet, Trophy, Star, Users, Gift, TrendingUp, LogOut, Home, Medal, Crown, ChevronLeft, ChevronRight, Copy, Check, Zap } from "lucide-react";
+import { Flame, Wallet, Trophy, Star, Users, Gift, TrendingUp, LogOut, Home, Medal, Crown, ChevronLeft, ChevronRight, Copy, Check, Zap, RefreshCw } from "lucide-react";
 import { useTranslation } from "@/hooks/useTranslation";
 import { getVIPTier, getNextVIPTier, VIPTier } from "@/hooks/useVIPTier";
 import { Progress } from "@/components/ui/progress";
@@ -36,10 +36,11 @@ interface ProfileSidebarProps {
   walletAddress: string | null;
   userStats: UserStats | null;
   onDisconnect: () => void;
+  onReconnect: () => void;
   onNavigate: (section: string) => void;
 }
 
-const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: ProfileSidebarProps) => {
+const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onReconnect, onNavigate }: ProfileSidebarProps) => {
   const { t } = useTranslation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -342,31 +343,59 @@ const ProfileSidebar = ({ walletAddress, userStats, onDisconnect, onNavigate }: 
 
       <SidebarFooter className={isCollapsed ? "p-2" : "p-4"}>
         {isCollapsed ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={onDisconnect}
-                className="w-full text-destructive hover:bg-destructive/10"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {t('wallet.disconnect')}
-            </TooltipContent>
-          </Tooltip>
+          <div className="flex flex-col gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={onReconnect}
+                  className="w-full text-primary hover:bg-primary/10"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {t('wallet.reconnect') || "Reconectar"}
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={onDisconnect}
+                  className="w-full text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {t('wallet.disconnect')}
+              </TooltipContent>
+            </Tooltip>
+          </div>
         ) : (
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onDisconnect}
-            className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>{t('wallet.disconnect')}</span>
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onReconnect}
+              className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/10"
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>{t('wallet.reconnect') || "Reconectar"}</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onDisconnect}
+              className="w-full gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{t('wallet.disconnect')}</span>
+            </Button>
+          </div>
         )}
       </SidebarFooter>
       
