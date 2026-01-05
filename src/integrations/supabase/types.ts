@@ -270,6 +270,7 @@ export type Database = {
           current_xp: number | null
           id: string | null
           masked_wallet: string | null
+          rank: number | null
           total_accounts_closed: number | null
           total_sol_recovered: number | null
           total_transactions: number | null
@@ -287,6 +288,19 @@ export type Database = {
         Returns: boolean
       }
       generate_referral_code: { Args: never; Returns: string }
+      get_leaderboard: {
+        Args: never
+        Returns: {
+          current_level: number
+          current_xp: number
+          id: string
+          masked_wallet: string
+          rank: number
+          total_accounts_closed: number
+          total_sol_recovered: number
+          total_transactions: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
