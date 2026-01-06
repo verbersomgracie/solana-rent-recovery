@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, ArrowLeftRight, ArrowDown, RefreshCw, ExternalLink } from "lucide-react";
 import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
 
-const RPC_ENDPOINT = "https://api.mainnet-beta.solana.com";
+const RPC_ENDPOINT = "https://solana-mainnet.g.alchemy.com/v2/demo";
 const JUPITER_QUOTE_API = "https://quote-api.jup.ag/v6/quote";
 const JUPITER_SWAP_API = "https://quote-api.jup.ag/v6/swap";
 const SOL_MINT = "So11111111111111111111111111111111111111112";

@@ -14,8 +14,8 @@ import { supabase } from '@/integrations/supabase/client';
 // WalletConnect Project ID
 const WALLETCONNECT_PROJECT_ID = 'dac06fba7358042191ac31b82ee8a3e5';
 
-// RPC Endpoint
-const RPC_ENDPOINT = 'https://api.mainnet-beta.solana.com';
+// RPC Endpoint - Using a more reliable public endpoint
+const RPC_ENDPOINT = 'https://solana-mainnet.g.alchemy.com/v2/demo';
 
 interface PhantomProvider {
   isPhantom: boolean;

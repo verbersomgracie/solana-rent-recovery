@@ -9,7 +9,7 @@ import { Loader2, Flame, Search, AlertTriangle, Trash2 } from "lucide-react";
 import { Connection, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, createCloseAccountInstruction, createBurnInstruction } from "@solana/spl-token";
 
-const RPC_ENDPOINT = "https://api.mainnet-beta.solana.com";
+const RPC_ENDPOINT = "https://solana-mainnet.g.alchemy.com/v2/demo";
 const INCINERATOR_ADDRESS = "1nc1nerator11111111111111111111111111111111";
 
 interface TokenAccount {

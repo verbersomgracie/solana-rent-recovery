@@ -14,7 +14,7 @@ import {
   createAssociatedTokenAccountInstruction
 } from "@solana/spl-token";
 
-const RPC_ENDPOINT = "https://api.mainnet-beta.solana.com";
+const RPC_ENDPOINT = "https://solana-mainnet.g.alchemy.com/v2/demo";
 const MAX_TOKENS_PER_TX = 10; // Limit per transaction to avoid size issues
 
 interface TokenAccount {

@@ -8,7 +8,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SOLANA_RPC_URL = Deno.env.get('SOLANA_RPC_URL') || 'https://api.mainnet-beta.solana.com';
+const SOLANA_RPC_URL = Deno.env.get('SOLANA_RPC_URL') || 'https://solana-mainnet.g.alchemy.com/v2/demo';
 const PLATFORM_FEE_WALLET = Deno.env.get('PLATFORM_FEE_WALLET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
