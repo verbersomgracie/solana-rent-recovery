@@ -178,7 +178,7 @@ const TokenSwap = ({ walletAddress, getProvider, walletName }: TokenSwapProps) =
       }
 
       // Deserialize and sign transaction
-      const swapTransactionBuf = Buffer.from(swapData.swapTransaction, "base64");
+      const swapTransactionBuf = Uint8Array.from(atob(swapData.swapTransaction), c => c.charCodeAt(0));
       const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
 
       toast.info("Confirme a transação na sua wallet...");

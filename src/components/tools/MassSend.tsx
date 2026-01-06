@@ -9,7 +9,6 @@ import { Loader2, Send, Search, AlertCircle } from "lucide-react";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { 
   TOKEN_PROGRAM_ID, 
-  getOrCreateAssociatedTokenAccount,
   createTransferInstruction,
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction
