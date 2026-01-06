@@ -5,9 +5,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Jupiter lite-api (free, no auth required until Jan 31 2026)
-const JUPITER_QUOTE_API = "https://lite-api.jup.ag/swap/v1/quote";
-const JUPITER_SWAP_API = "https://lite-api.jup.ag/swap/v1/swap";
+// Jupiter API (requires API key from portal.jup.ag)
+const JUPITER_API_KEY = Deno.env.get('JUPITER_API_KEY') || '';
+const JUPITER_QUOTE_API = "https://api.jup.ag/swap/v1/quote";
+const JUPITER_SWAP_API = "https://api.jup.ag/swap/v1/swap";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -34,11 +35,14 @@ serve(async (req) => {
       
       console.log('Fetching quote from:', url);
       
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-        },
-      });
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+      };
+      if (JUPITER_API_KEY) {
+        headers['x-api-key'] = JUPITER_API_KEY;
+      }
+      
+      const response = await fetch(url, { headers });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -69,12 +73,17 @@ serve(async (req) => {
       
       console.log('Creating swap transaction for:', userPublicKey);
       
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+      if (JUPITER_API_KEY) {
+        headers['x-api-key'] = JUPITER_API_KEY;
+      }
+      
       const response = await fetch(JUPITER_SWAP_API, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           quoteResponse,
           userPublicKey,
