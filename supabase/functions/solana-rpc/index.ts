@@ -5,8 +5,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Use Helius free RPC (more reliable than Alchemy demo)
-const SOLANA_RPC_URL = "https://mainnet.helius-rpc.com/?api-key=1d8740dc-e5f4-421c-b823-e1bad1889eff";
+// Public Solana RPC endpoints (fallback chain)
+const SOLANA_RPC_URLS = [
+  "https://solana-mainnet.g.alchemy.com/v2/demo",
+  "https://rpc.ankr.com/solana",
+  "https://api.mainnet-beta.solana.com"
+];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,29 +20,50 @@ serve(async (req) => {
   try {
     const body = await req.json();
     
-    console.log('RPC Request:', JSON.stringify(body.method));
+    console.log('RPC Request:', body.method);
 
-    const response = await fetch(SOLANA_RPC_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    let lastError = null;
+    
+    // Try each RPC endpoint until one works
+    for (const rpcUrl of SOLANA_RPC_URLS) {
+      try {
+        console.log('Trying RPC:', rpcUrl.split('/')[2]);
+        
+        const response = await fetch(rpcUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Solana RPC error:', errorText);
-      return new Response(
-        JSON.stringify({ error: 'RPC request failed', details: errorText }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+        const data = await response.json();
+        
+        // Check if there's an RPC error (not HTTP error)
+        if (data.error && (data.error.code === -32401 || data.error.message?.includes('rate limit'))) {
+          console.log('RPC error, trying next endpoint:', data.error.message);
+          lastError = data.error.message;
+          continue;
+        }
+
+        console.log('RPC success from:', rpcUrl.split('/')[2]);
+        return new Response(
+          JSON.stringify(data),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      } catch (fetchError: unknown) {
+        const errMsg = fetchError instanceof Error ? fetchError.message : 'Unknown fetch error';
+        console.log('Fetch error, trying next endpoint:', errMsg);
+        lastError = errMsg;
+        continue;
+      }
     }
 
-    const data = await response.json();
+    // All endpoints failed
+    console.error('All RPC endpoints failed:', lastError);
     return new Response(
-      JSON.stringify(data),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'All RPC endpoints failed', details: lastError }),
+      { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {

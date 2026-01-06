@@ -5,8 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const JUPITER_QUOTE_API = "https://quote-api.jup.ag/v6/quote";
-const JUPITER_SWAP_API = "https://quote-api.jup.ag/v6/swap";
+// Jupiter lite-api (free, no auth required until Jan 31 2026)
+const JUPITER_QUOTE_API = "https://lite-api.jup.ag/swap/v1/quote";
+const JUPITER_SWAP_API = "https://lite-api.jup.ag/swap/v1/swap";
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -14,12 +15,24 @@ serve(async (req) => {
   }
 
   try {
-    const { action, ...params } = await req.json();
+    const body = await req.json();
+    const { action, ...params } = body;
+
+    console.log('Jupiter proxy request:', action, JSON.stringify(params).slice(0, 200));
 
     if (action === 'quote') {
       const { inputMint, outputMint, amount, slippageBps } = params;
       
+      if (!inputMint || !outputMint || !amount) {
+        return new Response(
+          JSON.stringify({ error: 'Missing required parameters: inputMint, outputMint, amount' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       const url = `${JUPITER_QUOTE_API}?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amount}&slippageBps=${slippageBps || 50}`;
+      
+      console.log('Fetching quote from:', url);
       
       const response = await fetch(url, {
         headers: {
@@ -37,6 +50,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      console.log('Quote received successfully');
       return new Response(
         JSON.stringify(data),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -45,6 +59,15 @@ serve(async (req) => {
 
     if (action === 'swap') {
       const { quoteResponse, userPublicKey } = params;
+      
+      if (!quoteResponse || !userPublicKey) {
+        return new Response(
+          JSON.stringify({ error: 'Missing required parameters: quoteResponse, userPublicKey' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      console.log('Creating swap transaction for:', userPublicKey);
       
       const response = await fetch(JUPITER_SWAP_API, {
         method: 'POST',
@@ -71,6 +94,7 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      console.log('Swap transaction created successfully');
       return new Response(
         JSON.stringify(data),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -78,7 +102,7 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ error: 'Invalid action' }),
+      JSON.stringify({ error: 'Invalid action. Use "quote" or "swap"' }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
