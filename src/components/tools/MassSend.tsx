@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Loader2, Send, Search, AlertCircle } from "lucide-react";
-import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { PublicKey, Transaction, Connection } from "@solana/web3.js";
 import { 
   TOKEN_PROGRAM_ID, 
   createTransferInstruction,
@@ -14,8 +14,9 @@ import {
   createAssociatedTokenAccountInstruction
 } from "@solana/spl-token";
 
-const RPC_ENDPOINT = "https://solana-mainnet.g.alchemy.com/v2/demo";
-const MAX_TOKENS_PER_TX = 10; // Limit per transaction to avoid size issues
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const RPC_PROXY_URL = `${SUPABASE_URL}/functions/v1/solana-rpc`;
+const MAX_TOKENS_PER_TX = 10;
 
 interface TokenAccount {
   address: string;
@@ -31,6 +32,18 @@ interface MassSendProps {
   getProvider: () => any;
   walletName: string | null;
 }
+
+// Helper to make RPC calls via proxy
+const rpcCall = async (method: string, params: any[] = []) => {
+  const response = await fetch(RPC_PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message || 'RPC error');
+  return data.result;
+};
 
 const MassSend = ({ walletAddress, getProvider, walletName }: MassSendProps) => {
   const [destinationAddress, setDestinationAddress] = useState("");
@@ -51,22 +64,21 @@ const MassSend = ({ walletAddress, getProvider, walletName }: MassSendProps) => 
     setScanned(false);
 
     try {
-      const connection = new Connection(RPC_ENDPOINT);
-      const ownerPubkey = new PublicKey(walletAddress);
-
-      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(ownerPubkey, {
-        programId: TOKEN_PROGRAM_ID,
-      });
+      const result = await rpcCall('getTokenAccountsByOwner', [
+        walletAddress,
+        { programId: TOKEN_PROGRAM_ID.toString() },
+        { encoding: 'jsonParsed' }
+      ]);
 
       const tokenList: TokenAccount[] = [];
 
-      for (const account of tokenAccounts.value) {
+      for (const account of result.value || []) {
         const parsedInfo = account.account.data.parsed.info;
         const balance = parsedInfo.tokenAmount.uiAmount;
         
         if (balance > 0) {
           tokenList.push({
-            address: account.pubkey.toString(),
+            address: account.pubkey,
             mint: parsedInfo.mint,
             balance,
             decimals: parsedInfo.tokenAmount.decimals,
@@ -143,7 +155,6 @@ const MassSend = ({ walletAddress, getProvider, walletName }: MassSendProps) => 
     setProgress({ current: 0, total: selectedTokens.length });
 
     try {
-      const connection = new Connection(RPC_ENDPOINT);
       const ownerPubkey = new PublicKey(walletAddress);
       const destinationPubkey = new PublicKey(destinationAddress);
 
@@ -169,10 +180,10 @@ const MassSend = ({ walletAddress, getProvider, walletName }: MassSendProps) => 
             destinationPubkey
           );
 
-          // Check if destination ATA exists
-          const ataInfo = await connection.getAccountInfo(destinationAta);
+          // Check if destination ATA exists via proxy
+          const ataInfo = await rpcCall('getAccountInfo', [destinationAta.toString(), { encoding: 'base64' }]);
           
-          if (!ataInfo) {
+          if (!ataInfo.value) {
             // Create ATA instruction
             const createAtaIx = createAssociatedTokenAccountInstruction(
               ownerPubkey,
@@ -196,9 +207,9 @@ const MassSend = ({ walletAddress, getProvider, walletName }: MassSendProps) => 
           transaction.add(transferIx);
         }
 
-        // Get recent blockhash
-        const { blockhash } = await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
+        // Get recent blockhash via proxy
+        const blockhashResult = await rpcCall('getLatestBlockhash', [{ commitment: 'finalized' }]);
+        transaction.recentBlockhash = blockhashResult.value.blockhash;
         transaction.feePayer = ownerPubkey;
 
         // Sign and send

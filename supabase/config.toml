@@ -2,3 +2,9 @@ project_id = "odzvujigmveepnpuoqtr"
 
 [functions.close-accounts]
 verify_jwt = false
+
+[functions.jupiter-proxy]
+verify_jwt = false
+
+[functions.solana-rpc]
+verify_jwt = false

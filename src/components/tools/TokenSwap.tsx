@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, ArrowLeftRight, ArrowDown, RefreshCw, ExternalLink } from "lucide-react";
-import { Connection, PublicKey, VersionedTransaction } from "@solana/web3.js";
+import { Loader2, ArrowLeftRight, ArrowDown, ExternalLink } from "lucide-react";
+import { PublicKey, VersionedTransaction } from "@solana/web3.js";
 import { supabase } from "@/integrations/supabase/client";
 
-const RPC_ENDPOINT = "https://solana-mainnet.g.alchemy.com/v2/demo";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const RPC_PROXY_URL = `${SUPABASE_URL}/functions/v1/solana-rpc`;
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
@@ -40,6 +41,18 @@ interface Quote {
   priceImpactPct: number;
   routePlan: any[];
 }
+
+// Helper to make RPC calls via proxy
+const rpcCall = async (method: string, params: any[] = []) => {
+  const response = await fetch(RPC_PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+  const data = await response.json();
+  if (data.error) throw new Error(data.error.message || 'RPC error');
+  return data.result;
+};
 
 const TokenSwap = ({ walletAddress, getProvider, walletName }: TokenSwapProps) => {
   const [inputToken, setInputToken] = useState<Token>(POPULAR_TOKENS[0]);
@@ -192,19 +205,33 @@ const TokenSwap = ({ walletAddress, getProvider, walletName }: TokenSwapProps) =
       // Sign the transaction
       const signedTx = await provider.signTransaction(transaction);
       
-      // Send transaction
-      const connection = new Connection(RPC_ENDPOINT);
-      const signature = await connection.sendRawTransaction(signedTx.serialize(), {
-        skipPreflight: true,
-        maxRetries: 3,
-      });
+      // Send transaction via proxy
+      const serializedTx = Buffer.from(signedTx.serialize()).toString('base64');
+      const sendResult = await rpcCall('sendTransaction', [serializedTx, { encoding: 'base64', skipPreflight: true, maxRetries: 3 }]);
+
+      const signature = sendResult;
 
       // Confirm transaction
-      await connection.confirmTransaction(signature, "confirmed");
+      toast.info("Aguardando confirmação...");
+      let confirmed = false;
+      for (let i = 0; i < 30; i++) {
+        const statusResult = await rpcCall('getSignatureStatuses', [[signature]]);
+        if (statusResult.value[0]?.confirmationStatus === 'confirmed' || statusResult.value[0]?.confirmationStatus === 'finalized') {
+          confirmed = true;
+          break;
+        }
+        await new Promise(r => setTimeout(r, 1000));
+      }
 
-      toast.success("Swap realizado com sucesso!", {
-        description: `Signature: ${signature.slice(0, 16)}...`,
-      });
+      if (!confirmed) {
+        toast.warning("Transação enviada mas ainda não confirmada", {
+          description: `Signature: ${signature.slice(0, 16)}...`,
+        });
+      } else {
+        toast.success("Swap realizado com sucesso!", {
+          description: `Signature: ${signature.slice(0, 16)}...`,
+        });
+      }
 
       // Reset form
       setInputAmount("");
