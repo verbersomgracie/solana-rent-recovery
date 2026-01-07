@@ -20,28 +20,64 @@ const isMobile = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-// Check if user is inside Phantom in-app browser
-const isPhantomBrowser = () => {
-  return !!(window.phantom?.solana?.isPhantom);
+// Detect if iOS
+const isIOS = () => {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent);
 };
 
-// Build deep link for Phantom mobile app
-const getPhantomDeepLink = () => {
-  const url = window.location.origin + window.location.pathname;
-  // Use the correct Phantom browse URL format
-  return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
+// Get the current app URL for deep linking
+const getAppUrl = () => {
+  return window.location.origin + window.location.pathname;
 };
 
-// Build deep link for Solflare mobile app
-const getSolflareDeepLink = () => {
-  const url = window.location.origin + window.location.pathname;
-  return `https://solflare.com/ul/v1/browse/${encodeURIComponent(url)}`;
-};
-
-// Build deep link for Backpack mobile app  
-const getBackpackDeepLink = () => {
-  const url = window.location.origin + window.location.pathname;
-  return `https://backpack.app/ul/browse/${encodeURIComponent(url)}`;
+// Open wallet app with proper deep link handling
+const openWalletApp = (walletName: string) => {
+  const url = getAppUrl();
+  const encodedUrl = encodeURIComponent(url);
+  
+  // Define app schemes and universal links for each wallet
+  const walletLinks: Record<string, { appScheme: string; universalLink: string; downloadUrl: string }> = {
+    "Phantom": {
+      appScheme: `phantom://browse/${encodedUrl}`,
+      universalLink: `https://phantom.app/ul/browse/${encodedUrl}`,
+      downloadUrl: "https://phantom.app/download"
+    },
+    "Solflare": {
+      appScheme: `solflare://ul/v1/browse/${encodedUrl}`,
+      universalLink: `https://solflare.com/ul/v1/browse/${encodedUrl}`,
+      downloadUrl: "https://solflare.com/download"
+    },
+    "Backpack": {
+      appScheme: `backpack://browse/${encodedUrl}`,
+      universalLink: `https://backpack.app/ul/browse/${encodedUrl}`,
+      downloadUrl: "https://backpack.app/download"
+    }
+  };
+  
+  const links = walletLinks[walletName];
+  if (!links) return false;
+  
+  // On iOS, try app scheme first (works better for installed apps)
+  // On Android, universal links work better
+  if (isIOS()) {
+    // Try app scheme - if app is installed, it will open
+    // Create a hidden iframe to try the app scheme without navigating away
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = links.appScheme;
+    document.body.appendChild(iframe);
+    
+    // After a short delay, redirect to universal link as fallback
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+      window.location.href = links.universalLink;
+    }, 500);
+  } else {
+    // On Android, use universal link directly
+    window.location.href = links.universalLink;
+  }
+  
+  return true;
 };
 
 const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletModalProps) => {
@@ -50,19 +86,16 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
       name: "Phantom",
       icon: "https://phantom.app/img/phantom-icon-purple.svg",
       detected: false,
-      deepLink: getPhantomDeepLink(),
     },
     {
       name: "Solflare",
       icon: "https://solflare.com/favicon.ico",
       detected: false,
-      deepLink: getSolflareDeepLink(),
     },
     {
       name: "Backpack",
       icon: "https://backpack.app/favicon.ico",
       detected: false,
-      deepLink: getBackpackDeepLink(),
     },
     {
       name: "WalletConnect",
@@ -103,10 +136,9 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
   }, [isOpen]);
 
   const handleSelectWallet = async (wallet: WalletInfo) => {
-    // If on mobile and wallet not detected, open deep link
-    if (isMobileDevice && !wallet.detected && wallet.deepLink) {
-      // Try universal link first, then fall back to deep link
-      window.location.href = wallet.deepLink;
+    // If on mobile and wallet not detected, open wallet app via deep link
+    if (isMobileDevice && !wallet.detected && wallet.name !== "WalletConnect") {
+      openWalletApp(wallet.name);
       return;
     }
 
