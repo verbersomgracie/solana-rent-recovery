@@ -35,21 +35,21 @@ const openWalletApp = (walletName: string) => {
   const url = getAppUrl();
   const encodedUrl = encodeURIComponent(url);
   
-  // Define app schemes and universal links for each wallet
-  const walletLinks: Record<string, { appScheme: string; universalLink: string; downloadUrl: string }> = {
+  // Define app schemes for each wallet - use intent:// for Android
+  const walletLinks: Record<string, { androidIntent: string; iosScheme: string; downloadUrl: string }> = {
     "Phantom": {
-      appScheme: `phantom://browse/${encodedUrl}`,
-      universalLink: `https://phantom.app/ul/browse/${encodedUrl}`,
+      androidIntent: `intent://browse/${encodedUrl}#Intent;scheme=phantom;package=app.phantom;end`,
+      iosScheme: `phantom://browse/${encodedUrl}`,
       downloadUrl: "https://phantom.app/download"
     },
     "Solflare": {
-      appScheme: `solflare://ul/v1/browse/${encodedUrl}`,
-      universalLink: `https://solflare.com/ul/v1/browse/${encodedUrl}`,
+      androidIntent: `intent://ul/v1/browse/${encodedUrl}#Intent;scheme=solflare;package=com.solflare.mobile;end`,
+      iosScheme: `solflare://ul/v1/browse/${encodedUrl}`,
       downloadUrl: "https://solflare.com/download"
     },
     "Backpack": {
-      appScheme: `backpack://browse/${encodedUrl}`,
-      universalLink: `https://backpack.app/ul/browse/${encodedUrl}`,
+      androidIntent: `intent://browse/${encodedUrl}#Intent;scheme=backpack;package=app.backpack.wallet;end`,
+      iosScheme: `backpack://browse/${encodedUrl}`,
       downloadUrl: "https://backpack.app/download"
     }
   };
@@ -57,24 +57,12 @@ const openWalletApp = (walletName: string) => {
   const links = walletLinks[walletName];
   if (!links) return false;
   
-  // On iOS, try app scheme first (works better for installed apps)
-  // On Android, universal links work better
   if (isIOS()) {
-    // Try app scheme - if app is installed, it will open
-    // Create a hidden iframe to try the app scheme without navigating away
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = links.appScheme;
-    document.body.appendChild(iframe);
-    
-    // After a short delay, redirect to universal link as fallback
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-      window.location.href = links.universalLink;
-    }, 500);
+    // On iOS, use the app scheme directly
+    window.location.href = links.iosScheme;
   } else {
-    // On Android, use universal link directly
-    window.location.href = links.universalLink;
+    // On Android, use intent:// which handles "app not installed" gracefully
+    window.location.href = links.androidIntent;
   }
   
   return true;
