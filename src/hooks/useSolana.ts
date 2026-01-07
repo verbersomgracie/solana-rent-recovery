@@ -403,8 +403,43 @@ export function useSolana() {
         if (!provider) {
           throw new Error('Wallet provider not found');
         }
-        const result = await provider.signAndSendTransaction(transaction);
-        signature = result.signature;
+        
+        console.log('Provider found:', walletName, provider);
+        console.log('Transaction to sign:', transaction);
+        
+        // Try signAndSendTransaction first, fall back to signTransaction + manual send
+        try {
+          if (typeof provider.signAndSendTransaction === 'function') {
+            console.log('Using signAndSendTransaction...');
+            const result = await provider.signAndSendTransaction(transaction);
+            signature = result.signature;
+            console.log('Transaction sent, signature:', signature);
+          } else {
+            throw new Error('signAndSendTransaction not available');
+          }
+        } catch (signAndSendError: any) {
+          console.log('signAndSendTransaction failed, trying signTransaction...', signAndSendError);
+          
+          // Fallback: sign transaction and send manually
+          if (typeof provider.signTransaction === 'function') {
+            const signedTx = await provider.signTransaction(transaction);
+            console.log('Transaction signed, sending manually...');
+            
+            const connection = new Connection(RPC_ENDPOINT);
+            signature = await connection.sendRawTransaction(signedTx.serialize());
+            console.log('Transaction sent manually, signature:', signature);
+            
+            // Wait for confirmation
+            await connection.confirmTransaction(signature, 'confirmed');
+            console.log('Transaction confirmed');
+          } else {
+            throw signAndSendError;
+          }
+        }
+      }
+      
+      if (!signature) {
+        throw new Error('Nenhuma assinatura retornada pela wallet');
       }
       
       // Log transaction to database
