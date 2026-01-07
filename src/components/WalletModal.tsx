@@ -13,7 +13,6 @@ interface WalletInfo {
   icon: string;
   detected: boolean;
   deepLink?: string;
-  universalLink?: string;
 }
 
 // Detect if user is on mobile
@@ -21,9 +20,28 @@ const isMobile = () => {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-// Get current URL for redirect after wallet connection
-const getCurrentUrl = () => {
-  return encodeURIComponent(window.location.href);
+// Check if user is inside Phantom in-app browser
+const isPhantomBrowser = () => {
+  return !!(window.phantom?.solana?.isPhantom);
+};
+
+// Build deep link for Phantom mobile app
+const getPhantomDeepLink = () => {
+  const url = window.location.origin + window.location.pathname;
+  // Use the correct Phantom browse URL format
+  return `https://phantom.app/ul/browse/${encodeURIComponent(url)}`;
+};
+
+// Build deep link for Solflare mobile app
+const getSolflareDeepLink = () => {
+  const url = window.location.origin + window.location.pathname;
+  return `https://solflare.com/ul/v1/browse/${encodeURIComponent(url)}`;
+};
+
+// Build deep link for Backpack mobile app  
+const getBackpackDeepLink = () => {
+  const url = window.location.origin + window.location.pathname;
+  return `https://backpack.app/ul/browse/${encodeURIComponent(url)}`;
 };
 
 const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletModalProps) => {
@@ -32,22 +50,19 @@ const WalletModal = ({ isOpen, onClose, onSelectWallet, isConnecting }: WalletMo
       name: "Phantom",
       icon: "https://phantom.app/img/phantom-icon-purple.svg",
       detected: false,
-      deepLink: `https://phantom.app/ul/browse/${getCurrentUrl()}?ref=${getCurrentUrl()}`,
-      universalLink: `phantom://browse/${getCurrentUrl()}`
+      deepLink: getPhantomDeepLink(),
     },
     {
       name: "Solflare",
       icon: "https://solflare.com/favicon.ico",
       detected: false,
-      deepLink: `https://solflare.com/ul/v1/browse/${getCurrentUrl()}?ref=${getCurrentUrl()}`,
-      universalLink: `solflare://ul/v1/browse/${getCurrentUrl()}`
+      deepLink: getSolflareDeepLink(),
     },
     {
       name: "Backpack",
       icon: "https://backpack.app/favicon.ico",
       detected: false,
-      deepLink: `https://backpack.app/ul/browse/${getCurrentUrl()}`,
-      universalLink: `backpack://browse/${getCurrentUrl()}`
+      deepLink: getBackpackDeepLink(),
     },
     {
       name: "WalletConnect",
