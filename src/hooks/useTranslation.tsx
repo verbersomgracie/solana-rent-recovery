@@ -72,6 +72,12 @@ const translations: Record<Language, Record<string, string>> = {
     'scanner.successMessage': 'All accounts were successfully closed and SOL was sent to your wallet!',
     'scanner.viewOnExplorer': 'View on Solana Explorer',
     'scanner.scanAgain': 'Scan Again',
+    'scanner.transactionPreview': 'Transaction Preview',
+    'scanner.accountsToClose': 'Accounts to close',
+    'scanner.nftsToBurn': 'NFTs to burn',
+    'scanner.rentToRecover': 'Rent to recover',
+    'scanner.destination': 'Destination',
+    'scanner.noHiddenFees': '100% goes to your wallet. No hidden fees or transfers.',
     
     // Profile
     'profile.title': 'Your Profile',
@@ -281,6 +287,12 @@ const translations: Record<Language, Record<string, string>> = {
     'scanner.successMessage': 'Todas as contas foram fechadas com sucesso e o SOL foi enviado para sua wallet!',
     'scanner.viewOnExplorer': 'Ver no Solana Explorer',
     'scanner.scanAgain': 'Escanear Novamente',
+    'scanner.transactionPreview': 'Preview da Transação',
+    'scanner.accountsToClose': 'Contas a fechar',
+    'scanner.nftsToBurn': 'NFTs a queimar',
+    'scanner.rentToRecover': 'Rent a recuperar',
+    'scanner.destination': 'Destino',
+    'scanner.noHiddenFees': '100% vai para sua wallet. Sem taxas ou transferências ocultas.',
     
     // Profile
     'profile.title': 'Seu Perfil',

@@ -2,6 +2,17 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
+/**
+ * SOL Reclaim - Close Accounts Edge Function
+ * 
+ * PHANTOM COMPLIANCE:
+ * - ✅ Non-custodial: Never handles private keys
+ * - ✅ Transparent: Only uses CloseAccount and Burn instructions
+ * - ✅ NO hidden transfers: Fee is handled separately (opt-in donation)
+ * - ✅ User receives 100% of rent directly to their wallet
+ * - ✅ All transactions are signed by user's wallet
+ */
+
 // ============= CORS Headers =============
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,15 +22,13 @@ const corsHeaders = {
 
 // ============= Environment Variables =============
 const SOLANA_RPC_URL = Deno.env.get('SOLANA_RPC_URL') || 'https://api.mainnet-beta.solana.com';
-const PLATFORM_FEE_WALLET = Deno.env.get('PLATFORM_FEE_WALLET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 // Token Program ID
 const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
-const SYSTEM_PROGRAM_ID = '11111111111111111111111111111111';
 
-// ============= Platform Fee Management =============
+// ============= Platform Settings (for display only) =============
 async function getPlatformFeePercent(): Promise<number> {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -30,16 +39,14 @@ async function getPlatformFeePercent(): Promise<number> {
       .single();
     
     if (error || !data) {
-      console.log('Platform fee not found in database, using default: 5%');
-      return 5;
+      return 0; // No fee by default for Phantom compliance
     }
     
     const fee = parseFloat(data.value);
-    console.log(`Platform fee from database: ${fee}%`);
-    return isNaN(fee) ? 5 : Math.min(Math.max(fee, 0), 100); // Clamp between 0-100%
+    return isNaN(fee) ? 0 : Math.min(Math.max(fee, 0), 100);
   } catch (error) {
     console.error('Error fetching platform fee:', error);
-    return 5;
+    return 0;
   }
 }
 
@@ -95,34 +102,11 @@ function decodeBase58(encoded: string): Uint8Array {
       carry >>= 8;
     }
   }
-  // Add leading zeros
   for (const char of encoded) {
     if (char !== '1') break;
     result.push(0);
   }
   return new Uint8Array(result.reverse());
-}
-
-function encodeBase58(bytes: Uint8Array): string {
-  const digits = [0];
-  for (const byte of bytes) {
-    let carry = byte;
-    for (let i = 0; i < digits.length; i++) {
-      carry += digits[i] << 8;
-      digits[i] = carry % 58;
-      carry = Math.floor(carry / 58);
-    }
-    while (carry > 0) {
-      digits.push(carry % 58);
-      carry = Math.floor(carry / 58);
-    }
-  }
-  // Add leading zeros
-  for (const byte of bytes) {
-    if (byte !== 0) break;
-    digits.push(0);
-  }
-  return digits.reverse().map(d => BASE58_ALPHABET[d]).join('');
 }
 
 // ============= Address Validation =============
@@ -143,7 +127,6 @@ async function fetchNFTMetadata(uri: string): Promise<NFTMetadata | null> {
   try {
     if (!uri) return null;
     
-    // Handle IPFS and Arweave URIs
     let fetchUri = uri;
     if (uri.startsWith('ipfs://')) {
       fetchUri = `https://ipfs.io/ipfs/${uri.slice(7)}`;
@@ -152,7 +135,7 @@ async function fetchNFTMetadata(uri: string): Promise<NFTMetadata | null> {
     }
     
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeout = setTimeout(() => controller.abort(), 10000);
     
     const response = await fetch(fetchUri, {
       headers: { 'Accept': 'application/json' },
@@ -167,7 +150,6 @@ async function fetchNFTMetadata(uri: string): Promise<NFTMetadata | null> {
     
     let imageUrl = data.image || data.image_url || '';
     
-    // Convert IPFS/Arweave image URLs
     if (imageUrl.startsWith('ipfs://')) {
       imageUrl = `https://ipfs.io/ipfs/${imageUrl.slice(7)}`;
     } else if (imageUrl.startsWith('ar://')) {
@@ -189,7 +171,6 @@ async function fetchNFTMetadata(uri: string): Promise<NFTMetadata | null> {
 // ============= On-Chain Metadata =============
 async function getOnChainMetadata(mint: string): Promise<{ name: string; uri: string } | null> {
   try {
-    // Try DAS API first (Helius, etc.)
     const response = await fetch(SOLANA_RPC_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -254,9 +235,6 @@ async function getTokenAccounts(walletAddress: string): Promise<TokenAccount[]> 
         const info = account.account.data.parsed.info;
         const tokenAmount = info.tokenAmount;
         
-        // Include:
-        // 1. Accounts with 0 balance (closable empty token accounts)
-        // 2. NFTs (decimals = 0, amount = 1) - these can be burned
         const isEmptyAccount = tokenAmount.uiAmount === 0 || tokenAmount.amount === '0';
         const isNFT = tokenAmount.decimals === 0 && tokenAmount.amount === '1';
         
@@ -313,7 +291,7 @@ async function getRecentBlockhash(): Promise<{ blockhash: string; lastValidBlock
 
 /**
  * Build Token Program Burn instruction
- * Instruction index: 8
+ * PHANTOM APPROVED: Standard Token Program instruction
  */
 function buildBurnInstruction(
   tokenAccount: string,
@@ -321,18 +299,17 @@ function buildBurnInstruction(
   owner: string,
   amount: number
 ): TransactionInstruction {
-  // Burn instruction: [8 (1 byte), amount (8 bytes LE)]
   const data = new Uint8Array(9);
   data[0] = 8; // Burn instruction discriminator
   const view = new DataView(data.buffer);
-  view.setBigUint64(1, BigInt(amount), true); // little-endian
+  view.setBigUint64(1, BigInt(amount), true);
   
   return {
     programId: TOKEN_PROGRAM_ID,
     keys: [
-      { pubkey: tokenAccount, isSigner: false, isWritable: true },  // Token account
-      { pubkey: mint, isSigner: false, isWritable: true },           // Mint
-      { pubkey: owner, isSigner: true, isWritable: false }           // Owner/Authority
+      { pubkey: tokenAccount, isSigner: false, isWritable: true },
+      { pubkey: mint, isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: true, isWritable: false }
     ],
     data: Array.from(data)
   };
@@ -340,7 +317,8 @@ function buildBurnInstruction(
 
 /**
  * Build Token Program CloseAccount instruction
- * Instruction index: 9
+ * PHANTOM APPROVED: Standard Token Program instruction
+ * NOTE: destination is ALWAYS the user's own wallet - no third party transfers!
  */
 function buildCloseAccountInstruction(
   tokenAccount: string,
@@ -350,42 +328,16 @@ function buildCloseAccountInstruction(
   return {
     programId: TOKEN_PROGRAM_ID,
     keys: [
-      { pubkey: tokenAccount, isSigner: false, isWritable: true },   // Token account to close
-      { pubkey: destination, isSigner: false, isWritable: true },    // Destination for rent
-      { pubkey: owner, isSigner: true, isWritable: false }           // Owner/Authority
+      { pubkey: tokenAccount, isSigner: false, isWritable: true },
+      { pubkey: destination, isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: true, isWritable: false }
     ],
     data: [9] // CloseAccount instruction discriminator
   };
 }
 
-/**
- * Build System Program Transfer instruction
- * Instruction index: 2
- */
-function buildTransferInstruction(
-  from: string,
-  to: string,
-  lamports: number
-): TransactionInstruction {
-  // Transfer instruction: [2 (4 bytes LE), lamports (8 bytes LE)]
-  const data = new Uint8Array(12);
-  const view = new DataView(data.buffer);
-  view.setUint32(0, 2, true); // Transfer instruction index (little-endian)
-  view.setBigUint64(4, BigInt(lamports), true); // Amount in lamports
-  
-  return {
-    programId: SYSTEM_PROGRAM_ID,
-    keys: [
-      { pubkey: from, isSigner: true, isWritable: true },  // Source (signer)
-      { pubkey: to, isSigner: false, isWritable: true }    // Destination
-    ],
-    data: Array.from(data)
-  };
-}
-
 // ============= Request Handler =============
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { 
       status: 204,
@@ -393,7 +345,6 @@ serve(async (req) => {
     });
   }
 
-  // Only accept POST requests
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ 
       success: false, 
@@ -408,7 +359,6 @@ serve(async (req) => {
     const body = await req.json();
     const { walletAddress, action, accountsToClose } = body as CloseAccountRequest;
 
-    // Validate wallet address
     if (!walletAddress) {
       throw new Error('Wallet address is required');
     }
@@ -422,9 +372,8 @@ serve(async (req) => {
     // ============= SCAN Action =============
     if (action === 'scan') {
       const accounts = await getTokenAccounts(walletAddress);
-      const platformFeePercent = await getPlatformFeePercent();
+      const suggestedDonationPercent = await getPlatformFeePercent();
       
-      // Fetch metadata for NFTs in parallel with timeout
       const accountsWithMetadata = await Promise.all(
         accounts.map(async (acc) => {
           const isNFT = acc.decimals === 0 && acc.amount === '1';
@@ -463,9 +412,6 @@ serve(async (req) => {
       );
       
       const totalRentLamports = accounts.reduce((sum, acc) => sum + acc.lamports, 0);
-      const platformFeeLamports = Math.floor(totalRentLamports * (platformFeePercent / 100));
-      const netAmountLamports = totalRentLamports - platformFeeLamports;
-
       const nftCount = accountsWithMetadata.filter(a => a.type === 'nft').length;
       const tokenCount = accountsWithMetadata.filter(a => a.type === 'token').length;
       
@@ -481,12 +427,14 @@ serve(async (req) => {
           tokenCount,
           totalRentLamports,
           totalRentSol: totalRentLamports / 1e9,
-          platformFeeLamports,
-          platformFeeSol: platformFeeLamports / 1e9,
-          platformFeePercent,
-          netAmountLamports,
-          netAmountSol: netAmountLamports / 1e9,
-          feeWallet: PLATFORM_FEE_WALLET || 'Not configured'
+          // PHANTOM COMPLIANCE: User receives 100% of rent
+          // Fee info is for display only - optional donation is separate
+          platformFeeLamports: 0,
+          platformFeeSol: 0,
+          platformFeePercent: 0,
+          suggestedDonationPercent, // Optional, shown in UI
+          netAmountLamports: totalRentLamports,
+          netAmountSol: totalRentLamports / 1e9
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -495,27 +443,16 @@ serve(async (req) => {
 
     // ============= BUILD-TRANSACTION Action =============
     if (action === 'build-transaction') {
-      // Validate inputs
       if (!accountsToClose || accountsToClose.length === 0) {
         throw new Error('No accounts provided to close');
       }
 
-      if (!PLATFORM_FEE_WALLET) {
-        throw new Error('Platform fee wallet not configured. Contact support.');
-      }
-
-      if (!isValidSolanaAddress(PLATFORM_FEE_WALLET)) {
-        throw new Error('Platform fee wallet address is invalid. Contact support.');
-      }
-
-      // Validate all account addresses
       for (const acc of accountsToClose) {
         if (!isValidSolanaAddress(acc)) {
           throw new Error(`Invalid account address: ${acc}`);
         }
       }
 
-      // Get fresh account data
       const allAccounts = await getTokenAccounts(walletAddress);
       const selectedAccounts = allAccounts.filter(acc => 
         accountsToClose.includes(acc.pubkey)
@@ -525,60 +462,41 @@ serve(async (req) => {
         throw new Error('No valid accounts found to close. They may have already been closed.');
       }
 
-      // Log which accounts we're processing
       console.log(`Processing ${selectedAccounts.length} accounts for closure`);
 
       const totalRentLamports = selectedAccounts.reduce((sum, acc) => sum + acc.lamports, 0);
-      const platformFeePercent = await getPlatformFeePercent();
-      const platformFeeLamports = Math.floor(totalRentLamports * (platformFeePercent / 100));
-
-      // Minimum fee check (to avoid dust transactions)
-      const MIN_FEE_LAMPORTS = 1000; // 0.000001 SOL minimum
-      const actualPlatformFeeLamports = platformFeeLamports < MIN_FEE_LAMPORTS ? 0 : platformFeeLamports;
-
-      // Get fresh blockhash
       const { blockhash, lastValidBlockHeight } = await getRecentBlockhash();
 
       const instructions: TransactionInstruction[] = [];
 
       // Build instructions for each account
+      // PHANTOM COMPLIANCE: Only CloseAccount and Burn instructions
+      // NO SystemProgram.transfer - user receives 100% to their wallet
       for (const account of selectedAccounts) {
         const isNFT = account.decimals === 0 && account.amount === '1';
         
         if (isNFT) {
-          // First burn the NFT (required before closing)
           console.log(`Adding burn instruction for NFT: ${account.pubkey}`);
           instructions.push(buildBurnInstruction(
             account.pubkey,
             account.mint,
             walletAddress,
-            1 // Burn 1 token
+            1
           ));
         }
         
-        // Close the account to recover rent
+        // Close account - rent goes directly to user's wallet
         console.log(`Adding close instruction for account: ${account.pubkey}`);
         instructions.push(buildCloseAccountInstruction(
           account.pubkey,
-          walletAddress,
+          walletAddress, // Destination is ALWAYS the user's own wallet
           walletAddress
-        ));
-      }
-
-      // Add platform fee transfer (only if fee is significant)
-      if (actualPlatformFeeLamports > 0) {
-        console.log(`Adding platform fee transfer: ${actualPlatformFeeLamports} lamports to ${PLATFORM_FEE_WALLET}`);
-        instructions.push(buildTransferInstruction(
-          walletAddress,
-          PLATFORM_FEE_WALLET,
-          actualPlatformFeeLamports
         ));
       }
 
       console.log(`Built transaction with ${instructions.length} instructions`);
       console.log(`Total rent to recover: ${totalRentLamports} lamports (${(totalRentLamports / 1e9).toFixed(9)} SOL)`);
-      console.log(`Platform fee: ${actualPlatformFeeLamports} lamports (${(actualPlatformFeeLamports / 1e9).toFixed(9)} SOL)`);
-      console.log(`Net amount for user: ${totalRentLamports - actualPlatformFeeLamports} lamports`);
+      console.log(`User receives: 100% of recovered rent`);
 
       return new Response(JSON.stringify({
         success: true,
@@ -592,12 +510,21 @@ serve(async (req) => {
           accountsClosed: selectedAccounts.length,
           totalRentLamports,
           totalRentSol: totalRentLamports / 1e9,
-          platformFeeLamports: actualPlatformFeeLamports,
-          platformFeeSol: actualPlatformFeeLamports / 1e9,
-          platformFeePercent,
-          netAmountLamports: totalRentLamports - actualPlatformFeeLamports,
-          netAmountSol: (totalRentLamports - actualPlatformFeeLamports) / 1e9,
-          feeWallet: PLATFORM_FEE_WALLET
+          // PHANTOM COMPLIANCE: No platform fee in transaction
+          platformFeeLamports: 0,
+          platformFeeSol: 0,
+          platformFeePercent: 0,
+          netAmountLamports: totalRentLamports,
+          netAmountSol: totalRentLamports / 1e9,
+          // Transaction preview for transparency
+          transactionPreview: {
+            type: 'rent_recovery',
+            accountsToClose: selectedAccounts.length,
+            nftsToburn: selectedAccounts.filter(a => a.decimals === 0 && a.amount === '1').length,
+            emptyAccountsToClose: selectedAccounts.filter(a => a.amount === '0').length,
+            rentDestination: walletAddress,
+            estimatedRentRecovery: `${(totalRentLamports / 1e9).toFixed(6)} SOL`
+          }
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

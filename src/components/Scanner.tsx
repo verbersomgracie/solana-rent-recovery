@@ -29,7 +29,15 @@ interface ScanResult {
     platformFeeSol: number;
     platformFeePercent: number;
     netAmountSol: number;
-    feeWallet: string;
+    suggestedDonationPercent?: number;
+    transactionPreview?: {
+      type: string;
+      accountsToClose: number;
+      nftsToburn: number;
+      emptyAccountsToClose: number;
+      rentDestination: string;
+      estimatedRentRecovery: string;
+    };
   };
 }
 
@@ -207,9 +215,8 @@ const Scanner = ({
 
   const selectedAccounts = accounts.filter(acc => acc.selected);
   const totalRecoverable = selectedAccounts.reduce((sum, acc) => sum + acc.rentSol, 0);
-  const actualFeePercent = userStats ? vipFeePercent : platformFeePercent;
-  const platformFee = totalRecoverable * (actualFeePercent / 100);
-  const netAmount = totalRecoverable - platformFee;
+  // PHANTOM COMPLIANCE: No platform fee - user receives 100%
+  const netAmount = totalRecoverable;
   const currentTierIndex = userStats ? getVIPTierIndex(userStats.current_level, userStats.total_sol_recovered) : 0;
   const currentTier = VIP_TIERS[currentTierIndex];
 
@@ -336,53 +343,56 @@ const Scanner = ({
                 <p className="text-muted-foreground mt-1">{t('scanner.availableToRecover')}</p>
               </div>
 
+              {/* Transaction Preview - PHANTOM COMPLIANCE: Full transparency */}
               <div className="bg-muted/50 rounded-xl p-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground">{t('scanner.accountsFound')}</span>
-                  <span className="font-bold">{accounts.length}</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <span className="text-sm font-semibold text-foreground">{t('scanner.transactionPreview')}</span>
                 </div>
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">{t('scanner.platformFee')}</span>
-                    {userStats && actualFeePercent < 5 && (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r ${currentTier.color} text-white`}>
-                        <Crown className="w-3 h-3" />
-                        {currentTier.name}
-                      </span>
-                    )}
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t('scanner.accountsToClose')}</span>
+                    <span className="font-bold">{selectedAccounts.length}</span>
                   </div>
-                  <div className="text-right">
-                    {actualFeePercent < 5 ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground line-through text-sm">5%</span>
-                        <span className="text-green-500 font-bold">{actualFeePercent}%</span>
-                      </div>
-                    ) : (
-                      <span>{actualFeePercent}%</span>
-                    )}
+                  
+                  {accounts.filter(a => a.type === 'nft' && a.selected).length > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">{t('scanner.nftsToBurn')}</span>
+                      <span className="font-medium">{accounts.filter(a => a.type === 'nft' && a.selected).length}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t('scanner.rentToRecover')}</span>
+                    <span className="font-bold text-green-500">{totalRecoverable.toFixed(6)} SOL</span>
                   </div>
-                </div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-muted-foreground">{t('scanner.feeCharged')}</span>
-                  <span className="text-amber-500">-{platformFee.toFixed(4)} SOL</span>
-                </div>
-                {actualFeePercent < 5 && (
-                  <div className="flex justify-between items-center mb-2 text-green-500">
-                    <span className="text-sm">💎 {t('scanner.vipDiscount')}</span>
-                    <span className="text-sm font-medium">
-                      {t('scanner.saving')} {((totalRecoverable * 0.05) - platformFee).toFixed(4)} SOL
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">{t('scanner.destination')}</span>
+                    <span className="font-mono text-xs">
+                      {walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : '—'}
                     </span>
                   </div>
-                )}
-                <div className="border-t border-border pt-2 mt-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-foreground">{t('scanner.youReceive')}</span>
-                    <div className="text-right">
-                      <span className="font-bold text-xl text-green-500 block">{netAmount.toFixed(4)} SOL</span>
-                      {solPrice && (
-                        <span className="text-sm text-green-400">{formatUSD(netAmount)}</span>
-                      )}
+                  
+                  <div className="border-t border-border pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-foreground">{t('scanner.youReceive')}</span>
+                      <div className="text-right">
+                        <span className="font-bold text-xl text-green-500 block">{totalRecoverable.toFixed(6)} SOL</span>
+                        {solPrice && (
+                          <span className="text-sm text-green-400">{formatUSD(totalRecoverable)}</span>
+                        )}
+                      </div>
                     </div>
+                  </div>
+                  
+                  {/* Security notice */}
+                  <div className="mt-3 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                    <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('scanner.noHiddenFees')}
+                    </p>
                   </div>
                 </div>
               </div>
