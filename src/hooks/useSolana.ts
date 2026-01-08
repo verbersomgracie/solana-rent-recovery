@@ -354,6 +354,10 @@ export function useSolana() {
 
     setIsProcessing(true);
     try {
+      console.log('=== Starting close accounts flow ===');
+      console.log('Wallet:', publicKey);
+      console.log('Accounts to close:', accountAddresses.length);
+      
       // Get transaction data from edge function
       const { data, error } = await supabase.functions.invoke('close-accounts', {
         body: {
@@ -363,84 +367,161 @@ export function useSolana() {
         }
       });
 
-      if (error) throw error;
-      if (!data.success) throw new Error(data.error);
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Erro ao construir transação');
+      }
+      
+      if (!data?.success) {
+        console.error('Edge function returned error:', data?.error);
+        throw new Error(data?.error || 'Erro ao construir transação');
+      }
 
       const { transaction: txData, summary } = data;
+      
+      console.log('Transaction data received:', {
+        blockhash: txData.recentBlockhash,
+        instructionCount: txData.instructions.length,
+        summary
+      });
 
-      // Build the transaction
+      // Build the transaction using Solana Web3.js
       const transaction = new Transaction();
       transaction.recentBlockhash = txData.recentBlockhash;
       transaction.feePayer = new PublicKey(publicKey);
 
-      // Add instructions
+      // Add all instructions from the edge function
       for (const instr of txData.instructions) {
-        const instruction = new TransactionInstruction({
-          programId: new PublicKey(instr.programId),
-          keys: instr.keys.map((key: any) => ({
-            pubkey: new PublicKey(key.pubkey),
-            isSigner: key.isSigner,
-            isWritable: key.isWritable
-          })),
-          data: Buffer.from(instr.data)
-        });
-        transaction.add(instruction);
+        try {
+          const instruction = new TransactionInstruction({
+            programId: new PublicKey(instr.programId),
+            keys: instr.keys.map((key: any) => ({
+              pubkey: new PublicKey(key.pubkey),
+              isSigner: key.isSigner,
+              isWritable: key.isWritable
+            })),
+            data: Buffer.from(instr.data)
+          });
+          transaction.add(instruction);
+        } catch (instrError) {
+          console.error('Error adding instruction:', instrError, instr);
+          throw new Error('Erro ao construir instrução da transação');
+        }
       }
 
-      // Get provider and sign/send transaction
+      console.log('Transaction built successfully, requesting signature...');
       toast.info('Confirme a transação na sua wallet...');
       
-      let signature: string;
+      let signature: string | undefined;
       
-      // Handle WalletConnect separately
+      // Handle WalletConnect
       if (walletName === 'WalletConnect' && walletConnectRef.current) {
-        const signedTx = await walletConnectRef.current.signTransaction(transaction);
-        const connection = new Connection(RPC_ENDPOINT);
-        signature = await connection.sendRawTransaction(signedTx.serialize());
-        await connection.confirmTransaction(signature);
+        console.log('Using WalletConnect adapter...');
+        try {
+          const signedTx = await walletConnectRef.current.signTransaction(transaction);
+          const connection = new Connection(RPC_ENDPOINT, 'confirmed');
+          signature = await connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: 'confirmed'
+          });
+          console.log('WalletConnect transaction sent:', signature);
+          
+          // Wait for confirmation
+          const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+          if (confirmation.value.err) {
+            throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+          }
+          console.log('Transaction confirmed');
+        } catch (wcError: any) {
+          console.error('WalletConnect error:', wcError);
+          throw wcError;
+        }
       } else {
+        // Handle native wallet providers (Phantom, Solflare, Backpack)
         const provider = getProvider(walletName);
         if (!provider) {
-          throw new Error('Wallet provider not found');
+          throw new Error(`Wallet provider "${walletName}" não encontrado`);
         }
         
-        console.log('Provider found:', walletName, provider);
-        console.log('Transaction to sign:', transaction);
+        console.log('Using native provider:', walletName);
+        console.log('Provider capabilities:', {
+          hasSignAndSend: typeof provider.signAndSendTransaction === 'function',
+          hasSignTransaction: typeof provider.signTransaction === 'function'
+        });
         
-        // Try signAndSendTransaction first, fall back to signTransaction + manual send
-        try {
-          if (typeof provider.signAndSendTransaction === 'function') {
-            console.log('Using signAndSendTransaction...');
+        // Method 1: Try signAndSendTransaction (preferred for Phantom)
+        if (typeof provider.signAndSendTransaction === 'function') {
+          try {
+            console.log('Attempting signAndSendTransaction...');
             const result = await provider.signAndSendTransaction(transaction);
             signature = result.signature;
-            console.log('Transaction sent, signature:', signature);
-          } else {
-            throw new Error('signAndSendTransaction not available');
+            console.log('signAndSendTransaction successful:', signature);
+          } catch (signSendError: any) {
+            console.log('signAndSendTransaction failed:', signSendError.message);
+            
+            // Check if user rejected
+            if (signSendError.message?.toLowerCase().includes('reject') || 
+                signSendError.message?.toLowerCase().includes('cancelled') ||
+                signSendError.message?.toLowerCase().includes('denied')) {
+              throw signSendError;
+            }
+            
+            // Fall through to try signTransaction
+            console.log('Falling back to signTransaction...');
           }
-        } catch (signAndSendError: any) {
-          console.log('signAndSendTransaction failed, trying signTransaction...', signAndSendError);
-          
-          // Fallback: sign transaction and send manually
-          if (typeof provider.signTransaction === 'function') {
+        }
+        
+        // Method 2: signTransaction + manual send (fallback)
+        if (!signature && typeof provider.signTransaction === 'function') {
+          try {
+            console.log('Attempting signTransaction + manual send...');
             const signedTx = await provider.signTransaction(transaction);
-            console.log('Transaction signed, sending manually...');
+            console.log('Transaction signed successfully');
             
-            const connection = new Connection(RPC_ENDPOINT);
-            signature = await connection.sendRawTransaction(signedTx.serialize());
-            console.log('Transaction sent manually, signature:', signature);
+            const connection = new Connection(RPC_ENDPOINT, 'confirmed');
             
-            // Wait for confirmation
-            await connection.confirmTransaction(signature, 'confirmed');
-            console.log('Transaction confirmed');
-          } else {
-            throw signAndSendError;
+            // Send with preflight checks
+            signature = await connection.sendRawTransaction(signedTx.serialize(), {
+              skipPreflight: false,
+              preflightCommitment: 'confirmed',
+              maxRetries: 3
+            });
+            console.log('Transaction sent manually:', signature);
+            
+            // Wait for confirmation with timeout
+            const startTime = Date.now();
+            const timeoutMs = 60000; // 60 seconds
+            
+            while (Date.now() - startTime < timeoutMs) {
+              const status = await connection.getSignatureStatus(signature);
+              
+              if (status.value?.err) {
+                throw new Error(`Transaction failed: ${JSON.stringify(status.value.err)}`);
+              }
+              
+              if (status.value?.confirmationStatus === 'confirmed' || 
+                  status.value?.confirmationStatus === 'finalized') {
+                console.log('Transaction confirmed:', status.value.confirmationStatus);
+                break;
+              }
+              
+              // Wait before checking again
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+          } catch (manualSendError: any) {
+            console.error('Manual send error:', manualSendError);
+            throw manualSendError;
           }
         }
       }
       
+      // Final validation
       if (!signature) {
-        throw new Error('Nenhuma assinatura retornada pela wallet');
+        throw new Error('Nenhuma assinatura retornada pela wallet. Tente novamente.');
       }
+      
+      console.log('=== Transaction successful ===');
+      console.log('Final signature:', signature);
       
       // Log transaction to database
       await logTransaction(
@@ -453,7 +534,11 @@ export function useSolana() {
       );
       
       toast.success('SOL recuperado com sucesso!', {
-        description: `Você recebeu ${summary.netAmountSol.toFixed(6)} SOL`
+        description: `Você recebeu ${summary.netAmountSol.toFixed(6)} SOL`,
+        action: {
+          label: 'Ver TX',
+          onClick: () => window.open(`https://solscan.io/tx/${signature}`, '_blank')
+        }
       });
 
       return { 
@@ -461,12 +546,33 @@ export function useSolana() {
         signature 
       };
     } catch (error: any) {
-      console.error('Close accounts error:', error);
+      console.error('=== Close accounts error ===');
+      console.error('Error:', error);
+      console.error('Message:', error.message);
       
       // Handle user rejection
-      if (error.message?.includes('rejected') || error.message?.includes('User rejected')) {
+      const errorMsg = error.message?.toLowerCase() || '';
+      if (errorMsg.includes('reject') || 
+          errorMsg.includes('cancelled') || 
+          errorMsg.includes('denied') ||
+          errorMsg.includes('user rejected')) {
         toast.error('Transação cancelada pelo usuário');
         return { success: false, error: 'Transação cancelada' };
+      }
+      
+      // Handle specific error types
+      if (errorMsg.includes('insufficient funds') || errorMsg.includes('insufficient balance')) {
+        toast.error('Saldo insuficiente para taxas', {
+          description: 'Você precisa de SOL para pagar as taxas da rede'
+        });
+        return { success: false, error: 'Saldo insuficiente' };
+      }
+      
+      if (errorMsg.includes('blockhash') || errorMsg.includes('expired')) {
+        toast.error('Transação expirou', {
+          description: 'Tente novamente'
+        });
+        return { success: false, error: 'Transação expirada' };
       }
       
       toast.error('Erro ao processar transação', {
