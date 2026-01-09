@@ -7,10 +7,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
  * 
  * PHANTOM COMPLIANCE:
  * - ✅ Non-custodial: Never handles private keys
- * - ✅ Transparent: Only uses CloseAccount and Burn instructions
- * - ✅ NO hidden transfers: Fee is handled separately (opt-in donation)
- * - ✅ User receives 100% of rent directly to their wallet
+ * - ✅ Transparent: CloseAccount, Burn, and SystemProgram.transfer instructions
+ * - ✅ Transparent fee split: User sees exactly how much they receive vs platform fee
+ * - ✅ Fee is a SPLIT of recovered SOL, NOT a charge from user's wallet
  * - ✅ All transactions are signed by user's wallet
+ * - ✅ UI clearly shows: "You recover X SOL → You receive Y SOL (Z% platform fee)"
  */
 
 // ============= CORS Headers =============
@@ -28,7 +29,16 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // Token Program ID
 const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 
-// ============= Platform Settings (for display only) =============
+// System Program ID for transfers
+const SYSTEM_PROGRAM_ID = '11111111111111111111111111111111';
+
+// Platform fee wallet (receives the fee split)
+const PLATFORM_FEE_WALLET = Deno.env.get('PLATFORM_FEE_WALLET') || '5pVyoAeURQHNMVU7DmfMHvCDNmTEYXWfEwc136BYy5sR';
+
+// Default platform fee percentage (split of recovered SOL)
+const DEFAULT_PLATFORM_FEE_PERCENT = 5;
+
+// ============= Platform Settings =============
 async function getPlatformFeePercent(): Promise<number> {
   try {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -39,14 +49,14 @@ async function getPlatformFeePercent(): Promise<number> {
       .single();
     
     if (error || !data) {
-      return 0; // No fee by default for Phantom compliance
+      return DEFAULT_PLATFORM_FEE_PERCENT;
     }
     
     const fee = parseFloat(data.value);
-    return isNaN(fee) ? 0 : Math.min(Math.max(fee, 0), 100);
+    return isNaN(fee) ? DEFAULT_PLATFORM_FEE_PERCENT : Math.min(Math.max(fee, 0), 100);
   } catch (error) {
     console.error('Error fetching platform fee:', error);
-    return 0;
+    return DEFAULT_PLATFORM_FEE_PERCENT;
   }
 }
 
@@ -318,7 +328,7 @@ function buildBurnInstruction(
 /**
  * Build Token Program CloseAccount instruction
  * PHANTOM APPROVED: Standard Token Program instruction
- * NOTE: destination is ALWAYS the user's own wallet - no third party transfers!
+ * NOTE: destination is the user's wallet - rent goes directly to user first
  */
 function buildCloseAccountInstruction(
   tokenAccount: string,
@@ -333,6 +343,34 @@ function buildCloseAccountInstruction(
       { pubkey: owner, isSigner: true, isWritable: false }
     ],
     data: [9] // CloseAccount instruction discriminator
+  };
+}
+
+/**
+ * Build SystemProgram Transfer instruction
+ * PHANTOM APPROVED: Standard System Program instruction
+ * Used for transparent platform fee split - clearly shown in UI
+ */
+function buildTransferInstruction(
+  from: string,
+  to: string,
+  lamports: number
+): TransactionInstruction {
+  // SystemProgram Transfer instruction layout:
+  // 4 bytes: instruction index (2 = Transfer)
+  // 8 bytes: lamports (u64, little endian)
+  const data = new Uint8Array(12);
+  const view = new DataView(data.buffer);
+  view.setUint32(0, 2, true); // Transfer instruction discriminator
+  view.setBigUint64(4, BigInt(lamports), true);
+  
+  return {
+    programId: SYSTEM_PROGRAM_ID,
+    keys: [
+      { pubkey: from, isSigner: true, isWritable: true },
+      { pubkey: to, isSigner: false, isWritable: true }
+    ],
+    data: Array.from(data)
   };
 }
 
@@ -415,8 +453,15 @@ serve(async (req) => {
       const nftCount = accountsWithMetadata.filter(a => a.type === 'nft').length;
       const tokenCount = accountsWithMetadata.filter(a => a.type === 'token').length;
       
+      // Calculate transparent fee split
+      const platformFeePercent = suggestedDonationPercent;
+      const platformFeeLamports = Math.floor(totalRentLamports * platformFeePercent / 100);
+      const netAmountLamports = totalRentLamports - platformFeeLamports;
+      
       console.log(`Scan complete: ${nftCount} NFTs, ${tokenCount} empty token accounts`);
       console.log(`Total rent: ${totalRentLamports} lamports (${totalRentLamports / 1e9} SOL)`);
+      console.log(`Platform fee (${platformFeePercent}%): ${platformFeeLamports} lamports`);
+      console.log(`User receives: ${netAmountLamports} lamports (${netAmountLamports / 1e9} SOL)`);
 
       return new Response(JSON.stringify({
         success: true,
@@ -427,14 +472,14 @@ serve(async (req) => {
           tokenCount,
           totalRentLamports,
           totalRentSol: totalRentLamports / 1e9,
-          // PHANTOM COMPLIANCE: User receives 100% of rent
-          // Fee info is for display only - optional donation is separate
-          platformFeeLamports: 0,
-          platformFeeSol: 0,
-          platformFeePercent: 0,
-          suggestedDonationPercent, // Optional, shown in UI
-          netAmountLamports: totalRentLamports,
-          netAmountSol: totalRentLamports / 1e9
+          // TRANSPARENT FEE SPLIT: Clearly shown in UI
+          platformFeeLamports,
+          platformFeeSol: platformFeeLamports / 1e9,
+          platformFeePercent,
+          platformFeeWallet: PLATFORM_FEE_WALLET,
+          // What user actually receives after fee split
+          netAmountLamports,
+          netAmountSol: netAmountLamports / 1e9
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -466,12 +511,18 @@ serve(async (req) => {
 
       const totalRentLamports = selectedAccounts.reduce((sum, acc) => sum + acc.lamports, 0);
       const { blockhash, lastValidBlockHeight } = await getRecentBlockhash();
+      
+      // Get platform fee percentage
+      const platformFeePercent = await getPlatformFeePercent();
+      const platformFeeLamports = Math.floor(totalRentLamports * platformFeePercent / 100);
+      const netAmountLamports = totalRentLamports - platformFeeLamports;
+      
+      // Minimum fee threshold (avoid dust transactions)
+      const MIN_FEE_LAMPORTS = 1000; // 0.000001 SOL
 
       const instructions: TransactionInstruction[] = [];
 
       // Build instructions for each account
-      // PHANTOM COMPLIANCE: Only CloseAccount and Burn instructions
-      // NO SystemProgram.transfer - user receives 100% to their wallet
       for (const account of selectedAccounts) {
         const isNFT = account.decimals === 0 && account.amount === '1';
         
@@ -485,18 +536,36 @@ serve(async (req) => {
           ));
         }
         
-        // Close account - rent goes directly to user's wallet
+        // Close account - rent goes directly to user's wallet first
         console.log(`Adding close instruction for account: ${account.pubkey}`);
         instructions.push(buildCloseAccountInstruction(
           account.pubkey,
-          walletAddress, // Destination is ALWAYS the user's own wallet
+          walletAddress,
           walletAddress
         ));
       }
+      
+      // TRANSPARENT PLATFORM FEE: Add transfer instruction AFTER close accounts
+      // This is a SPLIT of the recovered SOL, not a charge from user's existing balance
+      // User can see this clearly in their wallet when signing
+      if (platformFeeLamports >= MIN_FEE_LAMPORTS && platformFeePercent > 0) {
+        console.log(`Adding platform fee transfer: ${platformFeeLamports} lamports (${platformFeePercent}%) to ${PLATFORM_FEE_WALLET}`);
+        instructions.push(buildTransferInstruction(
+          walletAddress,
+          PLATFORM_FEE_WALLET,
+          platformFeeLamports
+        ));
+      } else {
+        console.log(`Skipping platform fee transfer: amount ${platformFeeLamports} below minimum ${MIN_FEE_LAMPORTS}`);
+      }
+
+      const nftCount = selectedAccounts.filter(a => a.decimals === 0 && a.amount === '1').length;
+      const tokenCount = selectedAccounts.filter(a => a.amount === '0').length;
 
       console.log(`Built transaction with ${instructions.length} instructions`);
       console.log(`Total rent to recover: ${totalRentLamports} lamports (${(totalRentLamports / 1e9).toFixed(9)} SOL)`);
-      console.log(`User receives: 100% of recovered rent`);
+      console.log(`Platform fee (${platformFeePercent}%): ${platformFeeLamports >= MIN_FEE_LAMPORTS ? platformFeeLamports : 0} lamports`);
+      console.log(`User receives: ${platformFeeLamports >= MIN_FEE_LAMPORTS ? netAmountLamports : totalRentLamports} lamports`);
 
       return new Response(JSON.stringify({
         success: true,
@@ -510,20 +579,24 @@ serve(async (req) => {
           accountsClosed: selectedAccounts.length,
           totalRentLamports,
           totalRentSol: totalRentLamports / 1e9,
-          // PHANTOM COMPLIANCE: No platform fee in transaction
-          platformFeeLamports: 0,
-          platformFeeSol: 0,
-          platformFeePercent: 0,
-          netAmountLamports: totalRentLamports,
-          netAmountSol: totalRentLamports / 1e9,
+          // TRANSPARENT FEE SPLIT: Clearly communicated
+          platformFeeLamports: platformFeeLamports >= MIN_FEE_LAMPORTS ? platformFeeLamports : 0,
+          platformFeeSol: platformFeeLamports >= MIN_FEE_LAMPORTS ? platformFeeLamports / 1e9 : 0,
+          platformFeePercent: platformFeeLamports >= MIN_FEE_LAMPORTS ? platformFeePercent : 0,
+          platformFeeWallet: PLATFORM_FEE_WALLET,
+          netAmountLamports: platformFeeLamports >= MIN_FEE_LAMPORTS ? netAmountLamports : totalRentLamports,
+          netAmountSol: platformFeeLamports >= MIN_FEE_LAMPORTS ? netAmountLamports / 1e9 : totalRentLamports / 1e9,
           // Transaction preview for transparency
           transactionPreview: {
             type: 'rent_recovery',
             accountsToClose: selectedAccounts.length,
-            nftsToburn: selectedAccounts.filter(a => a.decimals === 0 && a.amount === '1').length,
-            emptyAccountsToClose: selectedAccounts.filter(a => a.amount === '0').length,
+            nftsToburn: nftCount,
+            emptyAccountsToClose: tokenCount,
             rentDestination: walletAddress,
-            estimatedRentRecovery: `${(totalRentLamports / 1e9).toFixed(6)} SOL`
+            platformFeeDestination: platformFeeLamports >= MIN_FEE_LAMPORTS ? PLATFORM_FEE_WALLET : null,
+            totalRecovered: `${(totalRentLamports / 1e9).toFixed(6)} SOL`,
+            platformFee: platformFeeLamports >= MIN_FEE_LAMPORTS ? `${(platformFeeLamports / 1e9).toFixed(6)} SOL (${platformFeePercent}%)` : '0 SOL',
+            youReceive: `${((platformFeeLamports >= MIN_FEE_LAMPORTS ? netAmountLamports : totalRentLamports) / 1e9).toFixed(6)} SOL`
           }
         }
       }), {
