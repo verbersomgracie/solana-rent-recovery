@@ -78,6 +78,9 @@ const translations: Record<Language, Record<string, string>> = {
     'scanner.rentToRecover': 'Rent to recover',
     'scanner.destination': 'Destination',
     'scanner.noHiddenFees': '100% goes to your wallet. No hidden fees or transfers.',
+    'scanner.transparentFee': 'Transparent fee:',
+    'scanner.transparentFeeDesc': 'This is a split of the recovered SOL, not a charge from your wallet.',
+    'scanner.noFeeApplied': '100% goes to your wallet',
     
     // Profile
     'profile.title': 'Your Profile',
@@ -293,6 +296,9 @@ const translations: Record<Language, Record<string, string>> = {
     'scanner.rentToRecover': 'Rent a recuperar',
     'scanner.destination': 'Destino',
     'scanner.noHiddenFees': '100% vai para sua wallet. Sem taxas ou transferências ocultas.',
+    'scanner.transparentFee': 'Taxa transparente:',
+    'scanner.transparentFeeDesc': 'Isso é um split do SOL recuperado, não uma cobrança da sua carteira.',
+    'scanner.noFeeApplied': '100% vai para sua wallet',
     
     // Profile
     'profile.title': 'Seu Perfil',

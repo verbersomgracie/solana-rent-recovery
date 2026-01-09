@@ -29,15 +29,7 @@ interface ScanResult {
     platformFeeSol: number;
     platformFeePercent: number;
     netAmountSol: number;
-    suggestedDonationPercent?: number;
-    transactionPreview?: {
-      type: string;
-      accountsToClose: number;
-      nftsToburn: number;
-      emptyAccountsToClose: number;
-      rentDestination: string;
-      estimatedRentRecovery: string;
-    };
+    platformFeeWallet?: string;
   };
 }
 
@@ -215,8 +207,10 @@ const Scanner = ({
 
   const selectedAccounts = accounts.filter(acc => acc.selected);
   const totalRecoverable = selectedAccounts.reduce((sum, acc) => sum + acc.rentSol, 0);
-  // PHANTOM COMPLIANCE: No platform fee - user receives 100%
-  const netAmount = totalRecoverable;
+  // Calculate transparent fee split
+  const effectiveFeePercent = platformFeePercent;
+  const platformFee = totalRecoverable * (effectiveFeePercent / 100);
+  const netAmount = totalRecoverable - platformFee;
   const currentTierIndex = userStats ? getVIPTierIndex(userStats.current_level, userStats.total_sol_recovered) : 0;
   const currentTier = VIP_TIERS[currentTierIndex];
 
@@ -343,7 +337,7 @@ const Scanner = ({
                 <p className="text-muted-foreground mt-1">{t('scanner.availableToRecover')}</p>
               </div>
 
-              {/* Transaction Preview - PHANTOM COMPLIANCE: Full transparency */}
+              {/* Transaction Preview - TRANSPARENT FEE SPLIT */}
               <div className="bg-muted/50 rounded-xl p-4 mb-6">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -365,8 +359,16 @@ const Scanner = ({
                   
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">{t('scanner.rentToRecover')}</span>
-                    <span className="font-bold text-green-500">{totalRecoverable.toFixed(6)} SOL</span>
+                    <span className="font-bold">{totalRecoverable.toFixed(6)} SOL</span>
                   </div>
+                  
+                  {/* Transparent Fee Split Display */}
+                  {effectiveFeePercent > 0 && platformFee > 0.000001 && (
+                    <div className="flex justify-between items-center text-amber-500">
+                      <span>{t('scanner.platformFee')} ({effectiveFeePercent}%)</span>
+                      <span>-{platformFee.toFixed(6)} SOL</span>
+                    </div>
+                  )}
                   
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">{t('scanner.destination')}</span>
@@ -379,19 +381,28 @@ const Scanner = ({
                     <div className="flex justify-between items-center">
                       <span className="font-bold text-foreground">{t('scanner.youReceive')}</span>
                       <div className="text-right">
-                        <span className="font-bold text-xl text-green-500 block">{totalRecoverable.toFixed(6)} SOL</span>
+                        <span className="font-bold text-xl text-green-500 block">{netAmount.toFixed(6)} SOL</span>
                         {solPrice && (
-                          <span className="text-sm text-green-400">{formatUSD(totalRecoverable)}</span>
+                          <span className="text-sm text-green-400">{formatUSD(netAmount)}</span>
                         )}
                       </div>
                     </div>
                   </div>
                   
-                  {/* Security notice */}
-                  <div className="mt-3 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                    <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      {t('scanner.noHiddenFees')}
+                  {/* Transparency notice */}
+                  <div className="mt-3 p-2 bg-primary/10 rounded-lg border border-primary/20">
+                    <p className="text-xs text-muted-foreground">
+                      {effectiveFeePercent > 0 && platformFee > 0.000001 ? (
+                        <>
+                          <span className="text-primary font-medium">{t('scanner.transparentFee')}</span>
+                          {' '}{t('scanner.transparentFeeDesc')}
+                        </>
+                      ) : (
+                        <span className="text-green-500 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          {t('scanner.noFeeApplied')}
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
