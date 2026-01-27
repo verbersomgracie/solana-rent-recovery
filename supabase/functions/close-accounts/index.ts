@@ -25,12 +25,12 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// RPC endpoints with fallback chain - primary from env, then public fallbacks
+// RPC endpoints with fallback chain - primary from env, then reliable public fallbacks
 const RPC_ENDPOINTS = [
   Deno.env.get('SOLANA_RPC_URL'),
-  'https://rpc.ankr.com/solana',
   'https://api.mainnet-beta.solana.com',
-  'https://solana-mainnet.g.alchemy.com/v2/demo'
+  'https://solana.public-rpc.com',
+  'https://rpc.shyft.to?api_key=demo'
 ].filter((url): url is string => !!url && url.length > 0);
 
 // ============= RPC Helper with Fallback =============
@@ -55,16 +55,19 @@ async function rpcRequest(body: object): Promise<any> {
       
       const data = await response.json();
       
-      // Check for rate limit errors
+      // Check for rate limit or access denied errors
       if (data.error) {
         const errCode = data.error.code;
         const errMsg = data.error.message || '';
         
         // Rate limit error codes: -32429, -32005, 429
+        // Access denied: -32052, 403
         if (errCode === -32429 || errCode === -32005 || errCode === 429 || 
-            errMsg.includes('rate limit') || errMsg.includes('max usage')) {
-          console.log(`Rate limited on ${new URL(rpcUrl).hostname}, trying next...`);
-          lastError = new Error(errMsg || 'Rate limited');
+            errCode === -32052 || errCode === 403 ||
+            errMsg.includes('rate limit') || errMsg.includes('max usage') ||
+            errMsg.includes('not allowed')) {
+          console.log(`Access denied or rate limited on ${new URL(rpcUrl).hostname}, trying next...`);
+          lastError = new Error(errMsg || 'Access denied or rate limited');
           continue;
         }
         
