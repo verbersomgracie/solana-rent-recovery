@@ -22,9 +22,78 @@ const corsHeaders = {
 };
 
 // ============= Environment Variables =============
-const SOLANA_RPC_URL = Deno.env.get('SOLANA_RPC_URL') || 'https://api.mainnet-beta.solana.com';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+// RPC endpoints with fallback chain - primary from env, then public fallbacks
+const RPC_ENDPOINTS = [
+  Deno.env.get('SOLANA_RPC_URL'),
+  'https://rpc.ankr.com/solana',
+  'https://api.mainnet-beta.solana.com',
+  'https://solana-mainnet.g.alchemy.com/v2/demo'
+].filter((url): url is string => !!url && url.length > 0);
+
+// ============= RPC Helper with Fallback =============
+async function rpcRequest(body: object): Promise<any> {
+  let lastError: Error | null = null;
+  
+  for (const rpcUrl of RPC_ENDPOINTS) {
+    try {
+      console.log(`Trying RPC: ${new URL(rpcUrl).hostname}`);
+      
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      
+      const response = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeout);
+      
+      const data = await response.json();
+      
+      // Check for rate limit errors
+      if (data.error) {
+        const errCode = data.error.code;
+        const errMsg = data.error.message || '';
+        
+        // Rate limit error codes: -32429, -32005, 429
+        if (errCode === -32429 || errCode === -32005 || errCode === 429 || 
+            errMsg.includes('rate limit') || errMsg.includes('max usage')) {
+          console.log(`Rate limited on ${new URL(rpcUrl).hostname}, trying next...`);
+          lastError = new Error(errMsg || 'Rate limited');
+          continue;
+        }
+        
+        // Other RPC errors - throw immediately
+        throw new Error(data.error.message || JSON.stringify(data.error));
+      }
+      
+      console.log(`RPC success from: ${new URL(rpcUrl).hostname}`);
+      return data;
+      
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.log(`RPC error on ${rpcUrl}: ${errMsg}`);
+      lastError = error instanceof Error ? error : new Error(errMsg);
+      
+      // If it's an abort (timeout), try next
+      if (errMsg.includes('abort')) {
+        continue;
+      }
+      
+      // If not a network/rate error, throw
+      if (!errMsg.includes('rate') && !errMsg.includes('limit') && !errMsg.includes('usage')) {
+        throw error;
+      }
+    }
+  }
+  
+  throw lastError || new Error('All RPC endpoints failed');
+}
 
 // Token Program ID
 const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
@@ -181,18 +250,12 @@ async function fetchNFTMetadata(uri: string): Promise<NFTMetadata | null> {
 // ============= On-Chain Metadata =============
 async function getOnChainMetadata(mint: string): Promise<{ name: string; uri: string } | null> {
   try {
-    const response = await fetch(SOLANA_RPC_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'getAsset',
-        params: { id: mint }
-      })
+    const data = await rpcRequest({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'getAsset',
+      params: { id: mint }
     });
-    
-    const data = await response.json();
     
     if (data.result) {
       return {
@@ -215,27 +278,16 @@ async function getTokenAccounts(walletAddress: string): Promise<TokenAccount[]> 
     throw new Error('Invalid wallet address format');
   }
   
-  const response = await fetch(SOLANA_RPC_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'getTokenAccountsByOwner',
-      params: [
-        walletAddress,
-        { programId: TOKEN_PROGRAM_ID },
-        { encoding: 'jsonParsed' }
-      ]
-    })
+  const data = await rpcRequest({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'getTokenAccountsByOwner',
+    params: [
+      walletAddress,
+      { programId: TOKEN_PROGRAM_ID },
+      { encoding: 'jsonParsed' }
+    ]
   });
-
-  const data = await response.json();
-  
-  if (data.error) {
-    console.error('RPC Error:', data.error);
-    throw new Error(`RPC Error: ${data.error.message || JSON.stringify(data.error)}`);
-  }
 
   const accounts: TokenAccount[] = [];
   
@@ -270,22 +322,12 @@ async function getTokenAccounts(walletAddress: string): Promise<TokenAccount[]> 
 
 // ============= Blockhash Retrieval =============
 async function getRecentBlockhash(): Promise<{ blockhash: string; lastValidBlockHeight: number }> {
-  const response = await fetch(SOLANA_RPC_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'getLatestBlockhash',
-      params: [{ commitment: 'finalized' }]
-    })
+  const data = await rpcRequest({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'getLatestBlockhash',
+    params: [{ commitment: 'finalized' }]
   });
-
-  const data = await response.json();
-  
-  if (data.error) {
-    throw new Error(`RPC Error getting blockhash: ${data.error.message || JSON.stringify(data.error)}`);
-  }
 
   if (!data.result?.value?.blockhash) {
     throw new Error('Failed to get recent blockhash from RPC');
